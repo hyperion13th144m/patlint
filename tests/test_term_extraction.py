@@ -25,6 +25,13 @@ class TermExtractionTests(unittest.TestCase):
         self.assertIn("2-メチル-1-プロパノール", terms)
         self.assertIn("制御装置", terms)
 
+    def test_extracts_prefixed_katakana_kanji_terms_as_whole_terms(self) -> None:
+        terms = extract_claim_terms("前記パルス印加部とは別部材の配管に設けられる。")
+
+        self.assertIn("パルス印加部", terms)
+        self.assertNotIn("パルス", terms)
+        self.assertNotIn("印加部", terms)
+
     def test_extracts_ordinal_prefixed_terms_as_whole_terms(self) -> None:
         terms = extract_claim_terms("第１電極と第２の電極を備える電池。")
 

@@ -6,6 +6,11 @@ from collections.abc import Iterable
 
 ASCII_TOKEN_PATTERN = re.compile(r"[A-Za-zＡ-Ｚａ-ｚ][0-9A-Za-z０-９Ａ-Ｚａ-ｚ]{2,}")
 
+PREFIXED_TERM_PATTERN = re.compile(
+    r"(?:前記|上記|下記|当該|該|各|本)"
+    r"[0-9A-Za-zＡ-Ｚａ-ｚァ-ヴー一-龥々]{2,30}(?=[はがをにでとのや、。\n]|$)"
+)
+
 ORDINAL_TERM_PATTERN = re.compile(
     r"第[0-9]+の?[0-9A-Za-zァ-ヴー一-龥々ー]{2,24}(?=[はがをにでとのや、。\n]|$)"
 )
@@ -35,6 +40,7 @@ KANJI_COMPOUND_PATTERN = re.compile(
 )
 
 TERM_PATTERNS = (
+    PREFIXED_TERM_PATTERN,
     ORDINAL_TERM_PATTERN,
     IUPAC_PATTERN,
     KATAKANA_TECHNICAL_PATTERN,
