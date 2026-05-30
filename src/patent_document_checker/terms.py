@@ -130,6 +130,7 @@ STOPWORDS = frozenset(
 )
 
 TERM_PREFIXES = ("前記", "上記", "下記", "当該", "該", "各", "本")
+REFERENCE_TERM_PREFIXES = ("前記", "当該", "該")
 DASH_CHARS = "‐‑‒–—―−－～〜~"
 DASH_TRANSLATION = str.maketrans({char: "-" for char in DASH_CHARS})
 Candidate = tuple[int, int, int, str]
@@ -155,6 +156,14 @@ class TermWithSign:
     term: str
     sign: str
     source: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimTermOccurrence:
+    term: str
+    has_reference_prefix: bool
+    start: int
+    end: int
 
 
 def normalize_term_text(text: str) -> str:
@@ -204,6 +213,26 @@ def extract_claim_terms(
         candidate[3]
         for candidate in _term_candidates(normalized, dictionary_terms=dictionary_terms)
     )
+
+
+def extract_claim_term_occurrences(
+    text: str, dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_STEMS
+) -> list[ClaimTermOccurrence]:
+    normalized = normalize_term_text(text)
+    occurrences: list[ClaimTermOccurrence] = []
+    for start, end, _, term in _term_candidates(
+        normalized, dictionary_terms=dictionary_terms
+    ):
+        raw_term = normalized[start:end]
+        occurrences.append(
+            ClaimTermOccurrence(
+                term=term,
+                has_reference_prefix=_has_reference_term_prefix(raw_term),
+                start=start,
+                end=end,
+            )
+        )
+    return occurrences
 
 
 def extract_term_occurrences(claims: Iterable[object], tree: object | None) -> dict[str, list[str]]:
@@ -267,8 +296,9 @@ def _add_occurrence(occurrences: dict[str, list[str]], term: str, location: str)
 
 
 def _dictionary_stem_pattern(stem: str) -> re.Pattern[str]:
+    prefix_pattern = "|".join(re.escape(prefix) for prefix in TERM_PREFIXES)
     suffix_pattern = "|".join(re.escape(suffix) for suffix in DICTIONARY_SUFFIXES)
-    return re.compile(rf"{re.escape(stem)}(?:{suffix_pattern})")
+    return re.compile(rf"(?:{prefix_pattern})?{re.escape(stem)}(?:{suffix_pattern})")
 
 
 def _target_texts_for_terms_with_signs(tree: object) -> list[tuple[str, str]]:
@@ -298,6 +328,10 @@ def _node_text(node: object) -> str:
     for child in getattr(node, "children", []):
         chunks.append(_node_text(child))
     return "\n".join(chunk for chunk in chunks if chunk)
+
+
+def _has_reference_term_prefix(value: str) -> bool:
+    return any(value.startswith(prefix) for prefix in REFERENCE_TERM_PREFIXES)
 
 
 def _prepare_term(value: str) -> str:

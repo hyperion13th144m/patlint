@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from patent_document_checker.parser import parse_text
 from patent_document_checker.terms import (
+    extract_claim_term_occurrences,
     extract_claim_terms,
     extract_claim_terms_by_number,
     extract_document_terms_with_signs,
@@ -27,6 +28,16 @@ class TermExtractionTests(unittest.TestCase):
         self.assertIn("高速プロセッサ", terms)
         self.assertIn("2-メチル-1-プロパノール", terms)
         self.assertIn("制御装置", terms)
+
+    def test_extracts_claim_term_occurrences_with_reference_prefix_state(self) -> None:
+        occurrences = extract_claim_term_occurrences(
+            "アルミ箔は、前記アルミ箔を支持し、当該アルミ箔を覆う。"
+        )
+
+        self.assertEqual(
+            [(item.term, item.has_reference_prefix) for item in occurrences],
+            [("アルミ箔", False), ("アルミ箔", True), ("アルミ箔", True)],
+        )
 
     def test_extracts_prefixed_katakana_kanji_terms_as_whole_terms(self) -> None:
         terms = extract_claim_terms("前記パルス印加部とは別部材の配管に設けられる。")
@@ -54,6 +65,16 @@ class TermExtractionTests(unittest.TestCase):
         self.assertNotIn("記載", terms)
         self.assertNotIn("装置", terms)
         self.assertNotIn("方法", terms)
+
+    def test_dictionary_stem_occurrences_keep_reference_prefix_state(self) -> None:
+        occurrences = extract_claim_term_occurrences(
+            "小さな絞り部を有し、前記絞り部の周囲に冷却流路を形成する。"
+        )
+
+        self.assertEqual(
+            [(item.term, item.has_reference_prefix) for item in occurrences if item.term == "絞り部"],
+            [("絞り部", False), ("絞り部", True)],
+        )
 
     def test_extracts_dictionary_stems_with_generated_suffixes(self) -> None:
         terms = extract_claim_terms(
