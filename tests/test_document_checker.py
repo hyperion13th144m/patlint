@@ -150,6 +150,90 @@ class DocumentCheckerTests(unittest.TestCase):
             )
         )
 
+    def test_warns_when_claim_term_is_missing_from_embodiments(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】制御部は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】CPUモジュールと制御部を備えるシステム。",
+                ]
+            )
+        )
+
+        messages = [
+            diagnostic.message
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "CLAIM_TERM_IN_EMBODIMENTS"
+        ]
+        self.assertIn("請求項の語句 CPUモジュールは、実施形態に記載されていません", messages)
+        self.assertNotIn("請求項の語句 制御部は、実施形態に記載されていません", messages)
+
+    def test_allows_claim_terms_found_in_embodiments(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】CPUモジュールと制御部は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】CPUモジュールと制御部を備えるシステム。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "CLAIM_TERM_IN_EMBODIMENTS"
+                for diagnostic in result.diagnostics
+            )
+        )
+
+    def test_warns_when_claim_term_is_missing_from_tech_solution(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明の概要】",
+                    "【課題を解決するための手段】",
+                    "【０００１】制御部は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】CPUモジュールと制御部を備えるシステム。",
+                ]
+            )
+        )
+
+        messages = [
+            diagnostic.message
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "CLAIM_TERM_IN_TECH_SOLUTION"
+        ]
+        self.assertIn("請求項の語句 CPUモジュールは、解決手段に記載されていません", messages)
+        self.assertNotIn("請求項の語句 制御部は、解決手段に記載されていません", messages)
+
+    def test_allows_claim_terms_found_in_tech_solution(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明の概要】",
+                    "【課題を解決するための手段】",
+                    "【０００１】CPUモジュールと制御部は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】CPUモジュールと制御部を備えるシステム。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "CLAIM_TERM_IN_TECH_SOLUTION"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_builds_tagged_document_tree(self) -> None:
         document = parse_text(
             "\n".join(
