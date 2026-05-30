@@ -7,7 +7,11 @@ from pathlib import Path
 from .engine import check_docx_bytes, check_text
 from .parser import parse_docx_bytes, parse_text
 from .report import render_html_report
-from .terms import extract_claim_terms_by_number, extract_document_terms_with_signs
+from .terms import (
+    extract_claim_terms_by_number,
+    extract_document_terms_with_signs,
+    extract_term_occurrences,
+)
 
 
 def main() -> None:
@@ -18,24 +22,29 @@ def main() -> None:
     parser.add_argument("--debug", action="store_true", help="include debug details in the HTML report")
     args = parser.parse_args()
 
+    term_occurrences = None
     debug_terms_by_claim = None
     debug_terms_with_signs = None
     if args.text:
         path = Path(args.text)
         text = path.read_text(encoding="utf-8")
         result = check_text(text, source=args.text)
-        if args.debug and args.html:
+        if args.html:
             document = parse_text(text, source=args.text)
-            debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
-            debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
+            term_occurrences = extract_term_occurrences(document.claims, document.tree)
+            if args.debug:
+                debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
+                debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
     elif args.path:
         path = Path(args.path)
         docx_bytes = path.read_bytes()
         result = check_docx_bytes(docx_bytes, source=str(path))
-        if args.debug and args.html:
+        if args.html:
             document = parse_docx_bytes(docx_bytes, source=str(path))
-            debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
-            debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
+            term_occurrences = extract_term_occurrences(document.claims, document.tree)
+            if args.debug:
+                debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
+                debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
     else:
         parser.error("provide a .docx path or --text")
 
@@ -45,6 +54,7 @@ def main() -> None:
         Path(args.html).write_text(
             render_html_report(
                 result,
+                term_occurrences=term_occurrences,
                 debug_terms_by_claim=debug_terms_by_claim,
                 debug_terms_with_signs=debug_terms_with_signs,
             ),

@@ -46,12 +46,15 @@ class CliTests(unittest.TestCase):
 
             html = output_path.read_text(encoding="utf-8")
 
+        self.assertIn("語句出現表", html)
+        self.assertLess(html.index("語句出現表"), html.index("Debug"))
         self.assertIn("抽出語句一覧", html)
         self.assertIn("CPUモジュール", html)
         self.assertIn("制御装置", html)
         self.assertIn("符号付語句一覧", html)
         self.assertIn("パルス印加部5", html)
         self.assertIn("処理槽3", html)
+        self.assertIn("請求項1", html)
         self.assertIn("0001", html)
 
 

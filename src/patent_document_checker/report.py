@@ -8,6 +8,7 @@ from patent_checker_common import DiagnosticsResult
 
 def render_html_report(
     result: DiagnosticsResult,
+    term_occurrences: Mapping[str, Sequence[str]] | None = None,
     debug_terms_by_claim: Mapping[int, Sequence[str]] | None = None,
     debug_terms_with_signs: Sequence[object] | None = None,
 ) -> str:
@@ -25,6 +26,7 @@ def render_html_report(
         )
 
     summary = result.summary
+    term_occurrences_html = _render_term_occurrences(term_occurrences)
     debug_terms_html = _render_debug_terms(
         debug_terms_by_claim, debug_terms_with_signs
     )
@@ -57,10 +59,40 @@ def render_html_report(
       {"".join(rows) or '<tr><td colspan="5">No diagnostics.</td></tr>'}
     </tbody>
   </table>
+  {term_occurrences_html}
   {debug_terms_html}
 </body>
 </html>
 """
+
+
+def _render_term_occurrences(
+    term_occurrences: Mapping[str, Sequence[str]] | None,
+) -> str:
+    if term_occurrences is None:
+        return ""
+
+    rows = []
+    for term, locations in sorted(term_occurrences.items()):
+        rows.append(
+            "<tr>"
+            f"<td>{escape(term)}</td>"
+            f"<td>{escape('、'.join(locations))}</td>"
+            "</tr>"
+        )
+
+    if not rows:
+        rows.append('<tr><td colspan="2">No term occurrences.</td></tr>')
+
+    return (
+        '<section class="term-occurrences">'
+        '<h2>語句出現表</h2>'
+        '<table>'
+        '<thead><tr><th>語句</th><th>出現場所</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody>'
+        '</table>'
+        '</section>'
+    )
 
 
 def _render_debug_terms(

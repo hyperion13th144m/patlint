@@ -171,13 +171,14 @@ def extract_terms_with_signs(
 
     for match in SIGNED_TERM_PATTERN.finditer(normalized):
         term = _prepare_term(match.group("term"))
+        sign = normalize_term_text(match.group("sign"))
         if _is_noise_term(term):
             continue
         results.append(
             TermWithSign(
-                whole_string=match.group(0),
+                whole_string=f"{term}{sign}",
                 term=term,
-                sign=normalize_term_text(match.group("sign")),
+                sign=sign,
                 source=source,
             )
         )
@@ -203,6 +204,20 @@ def extract_claim_terms(
         candidate[3]
         for candidate in _term_candidates(normalized, dictionary_terms=dictionary_terms)
     )
+
+
+def extract_term_occurrences(claims: Iterable[object], tree: object | None) -> dict[str, list[str]]:
+    occurrences: dict[str, list[str]] = {}
+
+    for claim in claims:
+        location = f"請求項{getattr(claim, 'number')}"
+        for term in extract_claim_terms(getattr(claim, "text")):
+            _add_occurrence(occurrences, term, location)
+
+    for item in extract_document_terms_with_signs(tree):
+        _add_occurrence(occurrences, item.whole_string, item.source or "不明")
+
+    return dict(sorted(occurrences.items()))
 
 
 def extract_claim_terms_by_number(
@@ -243,6 +258,12 @@ def _term_candidates(
                 candidates.append((match.start(), match.end(), 0, term))
 
     return _select_non_overlapping(candidates)
+
+
+def _add_occurrence(occurrences: dict[str, list[str]], term: str, location: str) -> None:
+    locations = occurrences.setdefault(term, [])
+    if location not in locations:
+        locations.append(location)
 
 
 def _dictionary_stem_pattern(stem: str) -> re.Pattern[str]:

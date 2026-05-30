@@ -11,6 +11,7 @@ from patent_document_checker.terms import (
     extract_claim_terms,
     extract_claim_terms_by_number,
     extract_document_terms_with_signs,
+    extract_term_occurrences,
     extract_terms_with_signs,
 )
 
@@ -96,6 +97,18 @@ class TermExtractionTests(unittest.TestCase):
             ],
         )
 
+    def test_removes_prefix_from_signed_term_whole_string(self) -> None:
+        terms = extract_terms_with_signs("前記流路部材３０と前記流路１００と前記連通路１０３を備える。")
+
+        self.assertEqual(
+            [(item.whole_string, item.term, item.sign) for item in terms],
+            [
+                ("流路部材30", "流路部材", "30"),
+                ("流路100", "流路", "100"),
+                ("連通路103", "連通路", "103"),
+            ],
+        )
+
     def test_extracts_terms_with_signs_from_embodiments_and_abstract(self) -> None:
         document = parse_text(
             "\n".join(
@@ -121,6 +134,30 @@ class TermExtractionTests(unittest.TestCase):
                 ("処理槽", "3", "0001"),
                 ("制御部", "A2", "要約書"),
             ],
+        )
+
+    def test_extracts_term_occurrences_with_signed_terms_including_signs(self) -> None:
+        document = parse_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理槽３に設けられる。",
+                    "【０００２】パルス印加部５は別の処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】CPUモジュールとパルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        self.assertEqual(
+            extract_term_occurrences(document.claims, document.tree),
+            {
+                "CPUモジュール": ["請求項1"],
+                "パルス印加部": ["請求項1"],
+                "パルス印加部5": ["0001", "0002"],
+                "処理槽3": ["0001"],
+            },
         )
 
     def test_extracts_terms_by_claim_number(self) -> None:
