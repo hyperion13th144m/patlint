@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 
 from .engine import check_docx_bytes, check_text
+from .parser import parse_docx_bytes, parse_text
 from .report import render_html_report
+from .terms import extract_claim_terms_by_number
 
 
 def main() -> None:
@@ -13,20 +15,34 @@ def main() -> None:
     parser.add_argument("path", nargs="?", help=".docx file to check")
     parser.add_argument("--text", help="plain text file to check")
     parser.add_argument("--html", help="write an HTML report")
+    parser.add_argument("--debug", action="store_true", help="include debug details in the HTML report")
     args = parser.parse_args()
 
+    debug_terms_by_claim = None
     if args.text:
-        result = check_text(Path(args.text).read_text(encoding="utf-8"), source=args.text)
+        path = Path(args.text)
+        text = path.read_text(encoding="utf-8")
+        result = check_text(text, source=args.text)
+        if args.debug and args.html:
+            document = parse_text(text, source=args.text)
+            debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
     elif args.path:
         path = Path(args.path)
-        result = check_docx_bytes(path.read_bytes(), source=str(path))
+        docx_bytes = path.read_bytes()
+        result = check_docx_bytes(docx_bytes, source=str(path))
+        if args.debug and args.html:
+            document = parse_docx_bytes(docx_bytes, source=str(path))
+            debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
     else:
         parser.error("provide a .docx path or --text")
 
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
 
     if args.html:
-        Path(args.html).write_text(render_html_report(result), encoding="utf-8")
+        Path(args.html).write_text(
+            render_html_report(result, debug_terms_by_claim=debug_terms_by_claim),
+            encoding="utf-8",
+        )
 
 
 if __name__ == "__main__":

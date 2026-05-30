@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from html import escape
 
 from patent_checker_common import DiagnosticsResult
 
 
-def render_html_report(result: DiagnosticsResult) -> str:
+def render_html_report(
+    result: DiagnosticsResult,
+    debug_terms_by_claim: Mapping[int, Sequence[str]] | None = None,
+) -> str:
     rows = []
     for diagnostic in result.diagnostics:
         location = diagnostic.location.to_dict() if diagnostic.location else {}
@@ -20,6 +24,7 @@ def render_html_report(result: DiagnosticsResult) -> str:
         )
 
     summary = result.summary
+    debug_terms_html = _render_debug_terms(debug_terms_by_claim)
     return f"""<!doctype html>
 <html lang="ja">
 <head>
@@ -49,6 +54,38 @@ def render_html_report(result: DiagnosticsResult) -> str:
       {"".join(rows) or '<tr><td colspan="5">No diagnostics.</td></tr>'}
     </tbody>
   </table>
+  {debug_terms_html}
 </body>
 </html>
 """
+
+
+def _render_debug_terms(
+    debug_terms_by_claim: Mapping[int, Sequence[str]] | None,
+) -> str:
+    if debug_terms_by_claim is None:
+        return ""
+
+    rows = []
+    for claim_number, terms in sorted(debug_terms_by_claim.items()):
+        terms_text = ", ".join(terms)
+        rows.append(
+            "<tr>"
+            f"<td>請求項{claim_number}</td>"
+            f"<td>{escape(terms_text)}</td>"
+            "</tr>"
+        )
+
+    if not rows:
+        rows.append('<tr><td colspan="2">No extracted terms.</td></tr>')
+
+    return (
+        '<section class="debug">'
+        '<h2>Debug</h2>'
+        '<h3>抽出語句一覧</h3>'
+        '<table>'
+        '<thead><tr><th>Claim</th><th>Terms</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody>'
+        '</table>'
+        '</section>'
+    )
