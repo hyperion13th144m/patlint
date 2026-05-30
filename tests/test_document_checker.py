@@ -105,6 +105,51 @@ class DocumentCheckerTests(unittest.TestCase):
         self.assertEqual(extract_claim_references("請求項１を引用する請求項３に記載の装置。"), [1, 3])
         self.assertEqual(extract_claim_references("請求項１を引用する請求項４、６～８に記載の装置。"), [1, 4, 6, 7, 8])
 
+    def test_reports_missing_paragraph_number_after_last_valid_number(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【技術分野】",
+                    "【０００１】本文。",
+                    "【０００２】本文。",
+                    "【０００４】本文。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "PARAGRAPH_NUMBERING"
+        ]
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(
+            diagnostics[0].message,
+            "段落番号は2まで正しく連番ですが、それ以降は連番ではありません。",
+        )
+        self.assertEqual(diagnostics[0].location.search_text, "【0004】")
+
+    def test_allows_sequential_paragraph_numbers(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【技術分野】",
+                    "【０００１】本文。",
+                    "【０００２】本文。",
+                    "【０００３】本文。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "PARAGRAPH_NUMBERING"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_builds_tagged_document_tree(self) -> None:
         document = parse_text(
             "\n".join(

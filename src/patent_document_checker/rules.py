@@ -9,10 +9,39 @@ from .parser import Claim, PatentDocumentIR
 
 def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
+    diagnostics.extend(check_paragraph_numbering(document.tree))
     diagnostics.extend(check_claim_numbering(document.claims))
     diagnostics.extend(check_claim_dependency(document.claims))
     diagnostics.extend(check_multi_multi_claim(document.claims))
     return diagnostics
+
+
+def check_paragraph_numbering(tree: object | None) -> list[Diagnostic]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    paragraphs = tree.find_all(kind="paragraph")
+    if len(paragraphs) < 2:
+        return []
+
+    previous = paragraphs[0]
+    for paragraph in paragraphs[1:]:
+        if paragraph.number != previous.number + 1:
+            return [
+                Diagnostic(
+                    rule_id="PARAGRAPH_NUMBERING",
+                    severity="error",
+                    message=(
+                        f"段落番号は{previous.number}まで正しく連番ですが、"
+                        "それ以降は連番ではありません。"
+                    ),
+                    location=_paragraph_location(paragraph),
+                    suggestion="段落番号に抜けや重複がないか確認してください。",
+                )
+            ]
+        previous = paragraph
+
+    return []
 
 
 def check_claim_numbering(claims: list[Claim]) -> list[Diagnostic]:
@@ -139,6 +168,20 @@ def check_multi_multi_claim(claims: list[Claim]) -> list[Diagnostic]:
             )
 
     return diagnostics
+
+
+def _paragraph_location(paragraph: object | None) -> DiagnosticLocation:
+    if paragraph is None:
+        return DiagnosticLocation(source_type="document", section_type="paragraphs")
+
+    tag_name = getattr(paragraph, "tag_name", None)
+    search_text = f"【{tag_name}】" if tag_name else None
+    return DiagnosticLocation(
+        source_type="document",
+        section_type="paragraphs",
+        block_index=getattr(paragraph, "block_index", None),
+        search_text=search_text,
+    )
 
 
 def _claim_location(claim: Claim | None) -> DiagnosticLocation:
