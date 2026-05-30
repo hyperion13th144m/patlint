@@ -26,7 +26,7 @@ def render_html_report(result: DiagnosticsResult) -> str:
   <meta charset="utf-8">
   <title>Patent Document Checker Report</title>
   <style>
-    body {{ font-family: system-ui, sans-serif; line-height: 1.6; margin: 32px; color: #1f2937; }}
+    body {{ font-family: system-ui, sans-serif; line-height: 1.6; margin: 32px; color: #1f2937; background: #ffffff; }}
     table {{ border-collapse: collapse; width: 100%; }}
     th, td {{ border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }}
     th {{ background: #f3f4f6; text-align: left; }}

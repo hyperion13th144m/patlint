@@ -115,25 +115,26 @@ def check_claim_dependency(claims: list[Claim]) -> list[Diagnostic]:
 
 def check_multi_multi_claim(claims: list[Claim]) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
-    by_number = {claim.number: claim for claim in claims}
 
     for claim in claims:
-        if not claim.is_multiple_dependent:
-            continue
-        multi_refs = [
-            referenced
-            for referenced in claim.referenced_claims
-            if by_number.get(referenced) and by_number[referenced].is_multiple_dependent
-        ]
-        if multi_refs:
-            refs = "、".join(str(ref) for ref in multi_refs)
+        if claim.is_multi_multi:
             diagnostics.append(
                 Diagnostic(
                     rule_id="MULTI_MULTI_CLAIM",
                     severity="warning",
-                    message=f"請求項{claim.number}が複数従属請求項{refs}を引用しています。",
+                    message=f"請求項{claim.number}がマルチマルチクレームとして検出されました。",
                     location=_claim_location(claim),
                     suggestion="マルチマルチクレームに該当しないか確認してください。",
+                )
+            )
+        elif claim.references_multi_multi:
+            diagnostics.append(
+                Diagnostic(
+                    rule_id="MULTI_MULTI_CLAIM",
+                    severity="warning",
+                    message=f"請求項{claim.number}がマルチマルチクレームを引用しています。",
+                    location=_claim_location(claim),
+                    suggestion="マルチマルチクレームを引用する請求項に該当しないか確認してください。",
                 )
             )
 

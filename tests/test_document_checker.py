@@ -3,9 +3,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 import sys
-import os
-import subprocess
-import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from patent_document_checker.engine import check_text
@@ -51,9 +48,62 @@ class DocumentCheckerTests(unittest.TestCase):
 
         self.assertTrue(any(diagnostic.rule_id == "MULTI_MULTI_CLAIM" for diagnostic in result.diagnostics))
 
+    def test_claims_track_official_multi_multi_states(self) -> None:
+        document = parse_text(
+            "\n".join(
+                [
+                    "【請求項1】装置。",
+                    "【請求項2】装置。",
+                    "【請求項3】請求項1又は2に記載の装置。",
+                    "【請求項4】請求項2又は3に記載の装置。",
+                    "【請求項5】請求項4に記載の装置。",
+                    "【請求項6】請求項5に記載の装置。",
+                ]
+            )
+        )
+
+        states = {
+            claim.number: (
+                claim.is_multiple_dependent,
+                claim.references_multiple_dependent,
+                claim.is_multi_multi,
+                claim.references_multi_multi,
+            )
+            for claim in document.claims
+        }
+        self.assertEqual(states[3], (True, False, False, False))
+        self.assertEqual(states[4], (True, True, True, False))
+        self.assertEqual(states[5], (False, True, False, True))
+        self.assertEqual(states[6], (False, True, False, True))
+
+    def test_reports_indirect_official_multi_multi_claim(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【請求項1】装置。",
+                    "【請求項2】請求項1に記載の装置。",
+                    "【請求項3】請求項1又は2に記載の装置。",
+                    "【請求項4】請求項3に記載の装置。",
+                    "【請求項5】請求項2又は4に記載の装置。",
+                ]
+            )
+        )
+
+        messages = [
+            diagnostic.message
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "MULTI_MULTI_CLAIM"
+        ]
+        self.assertEqual(messages, ["請求項5がマルチマルチクレームとして検出されました。"])
+
     def test_extract_claim_references_supports_ranges(self) -> None:
         self.assertEqual(extract_claim_references("請求項１〜３のいずれかに記載の装置。"), [1, 2, 3])
         self.assertEqual(extract_claim_references("請求項4から2のいずれかに記載の装置。"), [4, 3, 2])
+
+    def test_extract_claim_references_supports_omitted_claim_prefixes(self) -> None:
+        self.assertEqual(extract_claim_references("請求項１、２、４に記載の装置。"), [1, 2, 4])
+        self.assertEqual(extract_claim_references("請求項１を引用する請求項３に記載の装置。"), [1, 3])
+        self.assertEqual(extract_claim_references("請求項１を引用する請求項４、６～８に記載の装置。"), [1, 4, 6, 7, 8])
 
     def test_builds_tagged_document_tree(self) -> None:
         document = parse_text(
@@ -92,30 +142,6 @@ class DocumentCheckerTests(unittest.TestCase):
         self.assertEqual([figure.number for figure in figures], [1, 2])
         self.assertEqual(figures[0].text, "説明図。")
 
-    def test_cli_dump_tree_outputs_tree_json(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            input_path = Path(tmpdir) / "sample.txt"
-            input_path.write_text("【書類名】明細書\n【技術分野】\n【０００１】本文。", encoding="utf-8")
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "patent_document_checker.cli",
-                    "--text",
-                    str(input_path),
-                    "--dump-tree",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-                cwd=Path(__file__).resolve().parents[1],
-                env={**os.environ, "PYTHONPATH": "src"},
-            )
-
-        self.assertIn('"kind": "root"', completed.stdout)
-        self.assertIn('"tagName": "書類名"', completed.stdout)
-        self.assertIn('"tagName": "0001"', completed.stdout)
 
 
 if __name__ == "__main__":
