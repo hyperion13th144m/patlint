@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 ASCII_TOKEN_PATTERN = re.compile(r"[A-Za-zＡ-Ｚａ-ｚ][0-9A-Za-z０-９Ａ-Ｚａ-ｚ]{2,}")
 
@@ -49,11 +50,52 @@ TERM_PATTERNS = (
     KANJI_COMPOUND_PATTERN,
 )
 
-DEFAULT_DICTIONARY_TERMS = frozenset(
+DEFAULT_DICTIONARY_STEMS = frozenset(
     {
-        "ねじ部材",
-        "送り出し機構",
+        "ねじ",
+        "送り出し",
+        "位置決め",
+        "取り付け",
+        "歯付き",
+        "ばね",
+        "継ぎ手",
+        "はずみ車",
+        "つるまきバネ",
+        "うずまきバネ",
+        "溝付き",
+        "割りピン",
+        "植え込み",
+        "絞り",
+        "振り子",
+        "吊り上げ",
+        "吊り下げ",
+        "ろ過",
+        "折れ曲がり",
+        "立ち上がり",
+        "立ち下がり",
+        "圧縮ばね",
+        "金型受け",
+        "中抜き",
+        "めっき層",
+        "Ｘ線",
+        "折り目",
+        "雌ねじ孔",
+        "貫通らせん転位",
+        "ばね受け",
+        "圧縮コイルばね",
+        "軸受け",
+        "切り欠き",
+        "液体溜まり",
     }
+)
+DICTIONARY_SUFFIXES = (
+    "部材",
+    "部",
+    "機構",
+    "手段",
+    "体",
+    "工程",
+    "ステップ",
 )
 
 STOPWORDS = frozenset(
@@ -92,42 +134,80 @@ DASH_CHARS = "‐‑‒–—―−－～〜~"
 DASH_TRANSLATION = str.maketrans({char: "-" for char in DASH_CHARS})
 Candidate = tuple[int, int, int, str]
 
+SIGN_BODY = r"[0-9A-Za-z０-９Ａ-Ｚａ-ｚ]+(?:[-][0-9A-Za-z０-９Ａ-Ｚａ-ｚ]+)*(?:['’])?"
+SIGNED_TERM_PATTERN = re.compile(
+    r"(?P<term>"
+    r"第[0-9]+の?[ァ-ヴー一-龥々ー]{2,24}"
+    r"|[一-龥々０-９]{1,6}[ァ-ヴー]{3,16}[一-龥々]{0,6}"
+    r"|[ァ-ヴー]{3,16}[一-龥々]{1,10}"
+    r"|[ァ-ヴー]{2,16}"
+    r"|[A-Za-zＡ-Ｚａ-ｚ]+[ァ-ヴー]{2,}"
+    r"|[ァ-ヴー]{2,}[A-Za-z0-9Ａ-Ｚａ-ｚ]+"
+    r"|[一-龥々]{2,16}"
+    r")"
+    rf"(?P<sign>{SIGN_BODY})(?=[はがをにでとのや、。\n]|$)"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class TermWithSign:
+    whole_string: str
+    term: str
+    sign: str
+    source: str | None = None
+
 
 def normalize_term_text(text: str) -> str:
     normalized = unicodedata.normalize("NFKC", text)
-    normalized = normalized.translate(DASH_TRANSLATION)
+    normalized = normalized.translate(DASH_TRANSLATION).replace("’", "'")
     return re.sub(r"\s+", "", normalized)
 
 
+def extract_terms_with_signs(
+    text: str, source: str | None = None
+) -> list[TermWithSign]:
+    normalized = normalize_term_text(text)
+    results: list[TermWithSign] = []
+
+    for match in SIGNED_TERM_PATTERN.finditer(normalized):
+        term = _prepare_term(match.group("term"))
+        if _is_noise_term(term):
+            continue
+        results.append(
+            TermWithSign(
+                whole_string=match.group(0),
+                term=term,
+                sign=normalize_term_text(match.group("sign")),
+                source=source,
+            )
+        )
+
+    return results
+
+
+def extract_document_terms_with_signs(tree: object | None) -> list[TermWithSign]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    results: list[TermWithSign] = []
+    for text, source in _target_texts_for_terms_with_signs(tree):
+        results.extend(extract_terms_with_signs(text, source=source))
+    return results
+
+
 def extract_claim_terms(
-    text: str, dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_TERMS
+    text: str, dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_STEMS
 ) -> list[str]:
     normalized = normalize_term_text(text)
-    candidates: list[Candidate] = []
-
-    for priority, pattern in enumerate(TERM_PATTERNS, start=1):
-        for match in pattern.finditer(normalized):
-            term = _prepare_term(match.group(0))
-            if _is_noise_term(term):
-                continue
-            candidates.append((match.start(), match.end(), priority, term))
-
-    if dictionary_terms is not None:
-        for raw_term in dictionary_terms:
-            term = _prepare_term(raw_term)
-            if _is_noise_term(term):
-                continue
-            for match in re.finditer(re.escape(term), normalized):
-                candidates.append((match.start(), match.end(), 0, term))
-
     return _dedupe_preserving_order(
-        candidate[3] for candidate in _select_non_overlapping(candidates)
+        candidate[3]
+        for candidate in _term_candidates(normalized, dictionary_terms=dictionary_terms)
     )
 
 
 def extract_claim_terms_by_number(
     claims: Iterable[object],
-    dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_TERMS,
+    dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_STEMS,
 ) -> dict[int, list[str]]:
     terms_by_number: dict[int, list[str]] = {}
     for claim in claims:
@@ -135,6 +215,68 @@ def extract_claim_terms_by_number(
         text = getattr(claim, "text")
         terms_by_number[number] = extract_claim_terms(text, dictionary_terms)
     return terms_by_number
+
+
+def _term_candidates(
+    normalized_text: str,
+    dictionary_terms: Iterable[str] | None = DEFAULT_DICTIONARY_STEMS,
+) -> list[Candidate]:
+    candidates: list[Candidate] = []
+
+    for priority, pattern in enumerate(TERM_PATTERNS, start=1):
+        for match in pattern.finditer(normalized_text):
+            term = _prepare_term(match.group(0))
+            if _is_noise_term(term):
+                continue
+            candidates.append((match.start(), match.end(), priority, term))
+
+    if dictionary_terms is not None:
+        for raw_stem in dictionary_terms:
+            stem = _prepare_term(raw_stem)
+            if _is_noise_term(stem):
+                continue
+            pattern = _dictionary_stem_pattern(stem)
+            for match in pattern.finditer(normalized_text):
+                term = _prepare_term(match.group(0))
+                if _is_noise_term(term):
+                    continue
+                candidates.append((match.start(), match.end(), 0, term))
+
+    return _select_non_overlapping(candidates)
+
+
+def _dictionary_stem_pattern(stem: str) -> re.Pattern[str]:
+    suffix_pattern = "|".join(re.escape(suffix) for suffix in DICTIONARY_SUFFIXES)
+    return re.compile(rf"{re.escape(stem)}(?:{suffix_pattern})")
+
+
+def _target_texts_for_terms_with_signs(tree: object) -> list[tuple[str, str]]:
+    texts: list[tuple[str, str]] = []
+    for embodiment in tree.find_all(kind="description_of_embodiments"):
+        for paragraph in embodiment.find_all(kind="paragraph"):
+            text = _node_text(paragraph)
+            if text:
+                texts.append((text, _paragraph_source(paragraph)))
+    for abstract in tree.find_all(kind="abstract_tag"):
+        text = _node_text(abstract)
+        if text:
+            texts.append((text, "要約書"))
+    return texts
+
+
+def _paragraph_source(paragraph: object) -> str:
+    number = getattr(paragraph, "number", None)
+    if isinstance(number, int):
+        return f"{number:04d}"
+    tag_name = getattr(paragraph, "tag_name", None)
+    return str(tag_name) if tag_name else ""
+
+
+def _node_text(node: object) -> str:
+    chunks = [getattr(node, "text", "")]
+    for child in getattr(node, "children", []):
+        chunks.append(_node_text(child))
+    return "\n".join(chunk for chunk in chunks if chunk)
 
 
 def _prepare_term(value: str) -> str:

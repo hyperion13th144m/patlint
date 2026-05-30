@@ -7,7 +7,7 @@ from pathlib import Path
 from .engine import check_docx_bytes, check_text
 from .parser import parse_docx_bytes, parse_text
 from .report import render_html_report
-from .terms import extract_claim_terms_by_number
+from .terms import extract_claim_terms_by_number, extract_document_terms_with_signs
 
 
 def main() -> None:
@@ -19,6 +19,7 @@ def main() -> None:
     args = parser.parse_args()
 
     debug_terms_by_claim = None
+    debug_terms_with_signs = None
     if args.text:
         path = Path(args.text)
         text = path.read_text(encoding="utf-8")
@@ -26,6 +27,7 @@ def main() -> None:
         if args.debug and args.html:
             document = parse_text(text, source=args.text)
             debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
+            debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
     elif args.path:
         path = Path(args.path)
         docx_bytes = path.read_bytes()
@@ -33,6 +35,7 @@ def main() -> None:
         if args.debug and args.html:
             document = parse_docx_bytes(docx_bytes, source=str(path))
             debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
+            debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
     else:
         parser.error("provide a .docx path or --text")
 
@@ -40,7 +43,11 @@ def main() -> None:
 
     if args.html:
         Path(args.html).write_text(
-            render_html_report(result, debug_terms_by_claim=debug_terms_by_claim),
+            render_html_report(
+                result,
+                debug_terms_by_claim=debug_terms_by_claim,
+                debug_terms_with_signs=debug_terms_with_signs,
+            ),
             encoding="utf-8",
         )
 

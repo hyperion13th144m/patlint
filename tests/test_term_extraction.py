@@ -10,6 +10,8 @@ from patent_document_checker.parser import parse_text
 from patent_document_checker.terms import (
     extract_claim_terms,
     extract_claim_terms_by_number,
+    extract_document_terms_with_signs,
+    extract_terms_with_signs,
 )
 
 
@@ -52,11 +54,74 @@ class TermExtractionTests(unittest.TestCase):
         self.assertNotIn("装置", terms)
         self.assertNotIn("方法", terms)
 
-    def test_extracts_dictionary_terms_containing_hiragana(self) -> None:
-        terms = extract_claim_terms("ねじ部材と送り出し機構を備える固定具。")
+    def test_extracts_dictionary_stems_with_generated_suffixes(self) -> None:
+        terms = extract_claim_terms(
+            "ねじ部材、ねじ部、ねじ機構、ねじ手段、ねじ体、"
+            "送り出し機構、送り出し手段、送り出し工程、送り出しステップを備える。"
+        )
 
         self.assertIn("ねじ部材", terms)
+        self.assertIn("ねじ部", terms)
+        self.assertIn("ねじ機構", terms)
+        self.assertIn("ねじ手段", terms)
+        self.assertIn("ねじ体", terms)
         self.assertIn("送り出し機構", terms)
+        self.assertIn("送り出し手段", terms)
+        self.assertIn("送り出し工程", terms)
+        self.assertIn("送り出しステップ", terms)
+
+    def test_extracts_katakana_term_before_alphanumeric_sign(self) -> None:
+        terms = extract_terms_with_signs("供給管４ｂとポンプ４ｄを具備する。", source="0029")
+
+        self.assertEqual(
+            [(item.whole_string, item.term, item.sign, item.source) for item in terms],
+            [
+                ("供給管4b", "供給管", "4b", "0029"),
+                ("ポンプ4d", "ポンプ", "4d", "0029"),
+            ],
+        )
+
+    def test_extracts_terms_with_numeric_and_alphanumeric_signs(self) -> None:
+        terms = extract_terms_with_signs(
+            "パルス印加部５と第１電極１０ａと第２電極Ａ－１と制御部Ａ’を備える。"
+        )
+
+        self.assertEqual(
+            [(item.whole_string, item.term, item.sign) for item in terms],
+            [
+                ("パルス印加部5", "パルス印加部", "5"),
+                ("第1電極10a", "第1電極", "10a"),
+                ("第2電極A-1", "第2電極", "A-1"),
+                ("制御部A'", "制御部", "A'"),
+            ],
+        )
+
+    def test_extracts_terms_with_signs_from_embodiments_and_abstract(self) -> None:
+        document = parse_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理槽３に設けられる。",
+                    "【書類名】要約書",
+                    "【要約】制御部Ａ２は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】パルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        self.assertEqual(
+            [
+                (item.term, item.sign, item.source)
+                for item in extract_document_terms_with_signs(document.tree)
+            ],
+            [
+                ("パルス印加部", "5", "0001"),
+                ("処理槽", "3", "0001"),
+                ("制御部", "A2", "要約書"),
+            ],
+        )
 
     def test_extracts_terms_by_claim_number(self) -> None:
         document = parse_text(

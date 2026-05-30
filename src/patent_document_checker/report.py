@@ -9,6 +9,7 @@ from patent_checker_common import DiagnosticsResult
 def render_html_report(
     result: DiagnosticsResult,
     debug_terms_by_claim: Mapping[int, Sequence[str]] | None = None,
+    debug_terms_with_signs: Sequence[object] | None = None,
 ) -> str:
     rows = []
     for diagnostic in result.diagnostics:
@@ -24,7 +25,9 @@ def render_html_report(
         )
 
     summary = result.summary
-    debug_terms_html = _render_debug_terms(debug_terms_by_claim)
+    debug_terms_html = _render_debug_terms(
+        debug_terms_by_claim, debug_terms_with_signs
+    )
     return f"""<!doctype html>
 <html lang="ja">
 <head>
@@ -62,6 +65,22 @@ def render_html_report(
 
 def _render_debug_terms(
     debug_terms_by_claim: Mapping[int, Sequence[str]] | None,
+    debug_terms_with_signs: Sequence[object] | None,
+) -> str:
+    if debug_terms_by_claim is None and debug_terms_with_signs is None:
+        return ""
+
+    return (
+        '<section class="debug">'
+        '<h2>Debug</h2>'
+        f'{_render_debug_claim_terms(debug_terms_by_claim)}'
+        f'{_render_debug_terms_with_signs(debug_terms_with_signs)}'
+        '</section>'
+    )
+
+
+def _render_debug_claim_terms(
+    debug_terms_by_claim: Mapping[int, Sequence[str]] | None,
 ) -> str:
     if debug_terms_by_claim is None:
         return ""
@@ -80,12 +99,38 @@ def _render_debug_terms(
         rows.append('<tr><td colspan="2">No extracted terms.</td></tr>')
 
     return (
-        '<section class="debug">'
-        '<h2>Debug</h2>'
         '<h3>抽出語句一覧</h3>'
         '<table>'
         '<thead><tr><th>Claim</th><th>Terms</th></tr></thead>'
         f'<tbody>{"".join(rows)}</tbody>'
         '</table>'
-        '</section>'
+    )
+
+
+def _render_debug_terms_with_signs(
+    debug_terms_with_signs: Sequence[object] | None,
+) -> str:
+    if debug_terms_with_signs is None:
+        return ""
+
+    rows = []
+    for item in debug_terms_with_signs:
+        rows.append(
+            "<tr>"
+            f"<td>{escape(str(getattr(item, 'source', '') or ''))}</td>"
+            f"<td>{escape(str(getattr(item, 'whole_string', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'term', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'sign', '')))}</td>"
+            "</tr>"
+        )
+
+    if not rows:
+        rows.append('<tr><td colspan="4">No extracted terms with signs.</td></tr>')
+
+    return (
+        '<h3>符号付語句一覧</h3>'
+        '<table>'
+        '<thead><tr><th>Source</th><th>Whole</th><th>Term</th><th>Sign</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody>'
+        '</table>'
     )

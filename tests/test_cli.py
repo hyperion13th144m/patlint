@@ -14,7 +14,15 @@ class CliTests(unittest.TestCase):
             input_path = Path(tmpdir) / "claims.txt"
             output_path = Path(tmpdir) / "report.html"
             input_path.write_text(
-                "【請求項1】CPUモジュールを備える制御装置。",
+                "\n".join(
+                    [
+                        "【書類名】明細書",
+                        "【発明を実施するための形態】",
+                        "【０００１】パルス印加部５は処理槽３に設けられる。",
+                        "【書類名】特許請求の範囲",
+                        "【請求項1】CPUモジュールを備える制御装置。",
+                    ]
+                ),
                 encoding="utf-8",
             )
 
@@ -41,6 +49,10 @@ class CliTests(unittest.TestCase):
         self.assertIn("抽出語句一覧", html)
         self.assertIn("CPUモジュール", html)
         self.assertIn("制御装置", html)
+        self.assertIn("符号付語句一覧", html)
+        self.assertIn("パルス印加部5", html)
+        self.assertIn("処理槽3", html)
+        self.assertIn("0001", html)
 
 
 if __name__ == "__main__":

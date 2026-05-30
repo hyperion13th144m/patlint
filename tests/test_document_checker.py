@@ -150,6 +150,108 @@ class DocumentCheckerTests(unittest.TestCase):
             )
         )
 
+    def test_warns_when_same_term_has_different_signs(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理を実行する。",
+                    "【０００２】パルス印加部６は別の処理を実行する。",
+                    "【書類名】要約書",
+                    "【要約】パルス印加部５は処理槽３に設けられる。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】パルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "TERM_SIGN_CONFLICT"
+        ]
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].severity, "warning")
+        self.assertEqual(
+            diagnostics[0].message,
+            "符号付語句 パルス印加部 は、複数の符号で記載されています（5: 0001, 要約書、6: 0002）。",
+        )
+
+    def test_allows_same_term_with_same_sign_in_multiple_locations(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理を実行する。",
+                    "【０００２】パルス印加部５は別の処理を実行する。",
+                    "【書類名】要約書",
+                    "【要約】パルス印加部５は処理槽３に設けられる。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】パルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "TERM_SIGN_CONFLICT"
+                for diagnostic in result.diagnostics
+            )
+        )
+
+    def test_warns_when_same_sign_has_different_terms(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理を実行する。",
+                    "【０００２】制御部５は別の処理を実行する。",
+                    "【書類名】要約書",
+                    "【要約】パルス印加部５は処理槽３に設けられる。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】パルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "SIGN_TERM_CONFLICT"
+        ]
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].severity, "warning")
+        self.assertEqual(
+            diagnostics[0].message,
+            "符号 5 は、複数の語句で記載されています（パルス印加部: 0001, 要約書、制御部: 0002）。",
+        )
+
+    def test_allows_same_sign_with_same_term_in_multiple_locations(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】パルス印加部５は処理を実行する。",
+                    "【０００２】パルス印加部５は別の処理を実行する。",
+                    "【書類名】要約書",
+                    "【要約】パルス印加部５は処理槽３に設けられる。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】パルス印加部を備える装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "SIGN_TERM_CONFLICT"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_warns_when_claim_term_is_missing_from_embodiments(self) -> None:
         result = check_text(
             "\n".join(
