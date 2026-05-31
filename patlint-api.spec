@@ -16,6 +16,10 @@ datas = [
         str(ROOT / "src" / "patent_document_checker" / "ui"),
         "patent_document_checker/ui",
     ),
+    (
+        str(ROOT / "src" / "patent_document_checker" / "addin"),
+        "patent_document_checker/addin",
+    ),
 ]
 
 hiddenimports = [

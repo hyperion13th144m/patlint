@@ -41,6 +41,14 @@ if _ui_assets_dir is not None:
         name="ui-assets",
     )
 
+_addin_dir = _package_data_path("addin")
+if _addin_dir is not None:
+    app.mount(
+        "/addin",
+        StaticFiles(directory=str(_addin_dir)),
+        name="word-addin",
+    )
+
 
 class TextCheckRequest(BaseModel):
     text: str

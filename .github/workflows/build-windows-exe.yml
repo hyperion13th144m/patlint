@@ -73,6 +73,7 @@ jobs:
           Copy-Item "dist/patlint-api.exe" "$bundle/patlint-api.exe"
           Copy-Item "words/custom-sample.json" "$bundle/words/custom-sample.json"
           Copy-Item "words/custom-terms-sample.txt" "$bundle/words/custom-terms-sample.txt"
+          Copy-Item "office-addin/manifest.xml" "$bundle/manifest.xml"
 
       - name: Upload executable bundle
         uses: actions/upload-artifact@v4

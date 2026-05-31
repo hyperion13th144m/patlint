@@ -108,3 +108,15 @@ PYTHONPATH=src python3 -m patent_document_checker.cli --text claims.txt --html r
 ## Windows exe
 
 作成された `dist\patlint-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
+
+## Word アドイン
+
+初期版の Word アドインは sideload 用 manifest で配布します。先に `patlint-api.exe` または `patent-document-checker-api` で API サーバを起動し、`http://127.0.0.1:8000/ui` が開ける状態にしてください。
+
+```text
+office-addin/manifest.xml
+```
+
+アドインは Word 文書全体のプレーンテキストを取得し、ローカルの PatLint API (`http://127.0.0.1:8000/api/check-text`) に送信します。タスクペインには、診断結果、請求項の関係、符号の説明用一覧、語句出現表、単位チェックを表示します。
+
+GitHub Actions の Windows artifact には、`patlint-api.exe`、`manifest.xml`、`words` の sample ファイルをまとめて含めます。

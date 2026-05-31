@@ -1,0 +1,38 @@
+* { box-sizing: border-box; }
+:root {
+  --accent: #1f6f5b;
+  --border: #d1d5db;
+  --error: #b91c1c;
+  --info: #1d4ed8;
+  --muted: #6b7280;
+  --panel: #f9fafb;
+  --text: #111827;
+  --warning: #a16207;
+}
+body { margin: 0; color: var(--text); background: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+h1 { margin: 0; font-size: 18px; }
+a { color: var(--accent); font-weight: 650; text-decoration: none; }
+a:hover { text-decoration: underline; }
+main { padding: 14px 16px 24px; }
+label { display: block; margin: 0 0 5px; font-weight: 650; }
+input { width: 100%; min-height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; }
+button { min-height: 34px; border: 1px solid var(--accent); border-radius: 6px; padding: 0 12px; color: #fff; background: var(--accent); font-weight: 650; cursor: pointer; }
+button.secondary { color: var(--text); border-color: var(--border); background: #fff; }
+button:disabled { opacity: .55; cursor: wait; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.status { min-height: 20px; margin: 8px 0 10px; color: var(--muted); }
+.status.error { color: var(--error); }
+.summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.pill { border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; background: #fff; }
+.pill.error { color: var(--error); border-color: #fecaca; background: #fef2f2; }
+.pill.warning { color: var(--warning); border-color: #fde68a; background: #fffbeb; }
+.pill.info { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
+.section { margin-top: 18px; }
+.section h2 { margin: 0 0 8px; font-size: 15px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border: 1px solid var(--border); padding: 6px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #f3f4f6; }
+.empty { border: 1px dashed var(--border); border-radius: 6px; padding: 18px; color: var(--muted); background: var(--panel); }
+.meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.reference-output { white-space: pre-wrap; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 8px; line-height: 1.8; }
