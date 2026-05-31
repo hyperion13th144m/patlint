@@ -850,6 +850,70 @@ class DocumentCheckerTests(unittest.TestCase):
             )
         )
 
+    def test_warns_when_embodiment_sentence_may_lack_subject(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】制御部を備える。装置は処理を実行する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "MISSING_SUBJECT_IN_EMBODIMENT_SENTENCE"
+        ]
+
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].severity, "warning")
+        self.assertEqual(diagnostics[0].message, "段落【0001】の文に主語が欠けている可能性があります。")
+        self.assertEqual(diagnostics[0].location.search_text, "【0001】")
+
+    def test_allows_embodiment_sentences_with_subject_particles(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    "【０００１】制御部は処理を実行する。装置が信号を出力する。部材も移動する。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "MISSING_SUBJECT_IN_EMBODIMENT_SENTENCE"
+                for diagnostic in result.diagnostics
+            )
+        )
+
+    def test_ignores_missing_subject_sentences_outside_embodiments(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【背景技術】",
+                    "【０００１】制御部を備える。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "MISSING_SUBJECT_IN_EMBODIMENT_SENTENCE"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_warns_for_long_sentence_in_embodiments(self) -> None:
         long_sentence = "あ" * 199 + "。"
         result = check_text(

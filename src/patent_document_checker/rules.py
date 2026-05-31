@@ -33,6 +33,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics.extend(check_claim_terms_in_embodiments(document.claims, document.tree))
     diagnostics.extend(check_claim_terms_in_tech_solution(document.claims, document.tree))
     diagnostics.extend(check_long_embodiment_sentences(document.tree))
+    diagnostics.extend(check_missing_subject_in_embodiment_sentences(document.tree))
     diagnostics.extend(check_abstract_length(document.tree))
     diagnostics.extend(check_invention_title_matches_independent_claims(document.claims, document.tree))
     diagnostics.extend(check_dependent_claim_invention_name_matches_references(document.claims))
@@ -651,6 +652,42 @@ def check_dependent_claim_invention_name_matches_references(
         )
 
     return diagnostics
+
+
+def check_missing_subject_in_embodiment_sentences(tree: object | None) -> list[Diagnostic]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    diagnostics: list[Diagnostic] = []
+    for embodiment in tree.find_all(kind="description_of_embodiments"):
+        for paragraph in embodiment.find_all(kind="paragraph"):
+            paragraph_label = _paragraph_label(paragraph)
+            for sentence in _paragraph_sentences(_node_text(paragraph)):
+                if not sentence or any(particle in sentence for particle in ("は", "が", "も")):
+                    continue
+                diagnostics.append(
+                    Diagnostic(
+                        rule_id="MISSING_SUBJECT_IN_EMBODIMENT_SENTENCE",
+                        severity="warning",
+                        message=(
+                            f"{paragraph_label}の文に主語が欠けている可能性があります。"
+                        ),
+                        location=_paragraph_location(paragraph),
+                        suggestion="文中に主語を示す「は」「が」「も」が含まれているか確認してください。",
+                    )
+                )
+
+    return diagnostics
+
+
+def _paragraph_label(paragraph: object) -> str:
+    number = getattr(paragraph, "number", None)
+    if isinstance(number, int):
+        return f"段落【{number:04d}】"
+    tag_name = getattr(paragraph, "tag_name", None)
+    if tag_name:
+        return f"段落【{tag_name}】"
+    return "段落"
 
 
 def check_abstract_length(tree: object | None) -> list[Diagnostic]:
