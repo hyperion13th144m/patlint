@@ -1,3 +1,5 @@
 __pycache__
 .venv
 var
+words/custom.json
+words/custom-terms.txt
