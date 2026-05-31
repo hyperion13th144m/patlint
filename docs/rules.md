@@ -1,0 +1,55 @@
+# チェックルール
+
+PatLint は、特許明細書・特許請求の範囲・要約書のテキストから、以下の観点で診断を出力します。
+
+## 文字・語句
+
+- `FORBIDDEN_CHARACTER`: JIS X 0208:1997 準拠の Shift_JIS に変換できない文字、丸付数字、半角カナ、合成用丸、ASCII 制御文字を error として検出します。
+- `RECOMMENDED_WORDING_*`: `words/default.json`, `words/extra.txt`, `words/patterns.py` などの語句・正規表現に基づき、推奨されない語句や明らかな誤記を warning として検出します。カテゴリは `claims_ng`, `spec_pl`, `spec_antimonopoly`, `spec_trademark`, `typo_words`, `typo_regex` です。
+
+## 請求項
+
+- `CLAIM_NUMBERING`: 請求項番号の欠落、重複、0 以下の番号、請求項なしを検出します。
+- `CLAIM_DEPENDENCY`: 存在しない請求項の引用、自己引用、後続請求項の引用を error として検出します。
+- `MULTI_MULTI_CLAIM`: マルチマルチクレーム、またはマルチマルチクレームを引用する請求項を warning として検出します。
+- `CLAIM_TERM_REFERENCE_PREFIX`: 請求項中で既出または引用元請求項に出現済みの語句に、前記・該・当該が付いていない可能性を warning として検出します。
+- `DEPENDENT_CLAIM_INVENTION_NAME_MISMATCH`: 従属請求項末尾の発明の名称が、参照元請求項の発明の名称と一致しない場合に error とします。
+- HTML レポート、API クライアント、Word アドインでは、請求項ごとの従属先・被従属・独立項/従属項/複数従属項の関係表も出力します。
+
+## 明細書・要約書
+
+- `PARAGRAPH_NUMBERING`: 段落番号が連続していない場合に error とします。
+- `PARAGRAPH_END_PUNCTUATION`: 段落末尾が全角句点「。」で終わっていない場合に error とします。
+- `ABSTRACT_LENGTH`: 要約書の文字数が 400 文字を超える場合に error とします。
+- `LONG_EMBODIMENT_SENTENCE`: 実施形態の段落で、「。」または「．」で区切った一文が 200 文字以上の場合に warning とします。
+- `MISSING_SUBJECT_IN_EMBODIMENT_SENTENCE`: 実施形態の文に「は」「が」「も」が含まれない場合、主語が欠けている可能性として warning とします。
+
+## 発明の名称・請求項カテゴリ
+
+- `INVENTION_TITLE_CLAIM_MISMATCH`: 発明の名称タグを「、」「，」「及び」「並びに」「および」「ならびに」で分割した語句と、独立請求項末尾の語句が完全一致しない場合に error とします。
+- `CLAIM_TERM_IN_EMBODIMENTS`: 請求項から抽出した語句が、発明を実施するための形態に記載されていない場合に warning とします。
+- `CLAIM_TERM_IN_TECH_SOLUTION`: 請求項から抽出した語句が、課題を解決するための手段に記載されていない場合に warning とします。
+
+## 符号・図面
+
+- `TERM_VARIATION`: 語句の先頭または末尾が近い表記揺れ候補を warning として検出します。
+- `TERM_SIGN_CONFLICT`: 同じ語句に複数の符号が付いている場合に warning とします。
+- `SIGN_TERM_CONFLICT`: 同じ符号に複数の語句が付いている場合に warning とします。
+- `FIGURE_REFERENCE`: 図面の簡単な説明にある図番号が本文で言及されていない場合、または本文で言及された図番号が図面の簡単な説明にない場合に warning とします。「図1から図4」「図1～図5」「図1～5」の範囲表現も展開します。
+- HTML レポート、API クライアント、Word アドインでは、符号付き語句一覧を、明細書の符号の説明へ貼り付けやすい形式で出力できます。
+
+## 単位
+
+- 数値 + 単位表現を抽出し、`units/si_units.json`, `units/non_si_units.json`, `units/custom_units.json` に基づいて SI 単位、非 SI 単位を HTML レポート、API クライアント、Word アドインに出力します。
+- 非 SI 単位や非推奨略記は、設定ファイルに記載された `INFO` / `WARNING` とメッセージで表示します。
+- 単位リストにない未知単位は表示しません。
+
+## デフォルト語句データ
+
+`/help` 画面では、以下のデフォルト語句データを確認できます。
+
+- `words/default.json`
+- `words/default-terms.txt`
+- `words/extra.txt`
+
+ユーザー追加データは `words/custom.json` と `words/custom-terms.txt` に記載します。
