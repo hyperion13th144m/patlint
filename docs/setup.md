@@ -124,3 +124,5 @@ C:\PatLintAddin\manifest.xml
 9. `共有フォルダー` から `PatLint` を選択します。
 
 アドインは Word 文書全体のプレーンテキストを取得し、ローカルの PatLint API (`http://127.0.0.1:8000/api/check-text`) に送信します。
+
+IIS で HTTPS 終端して LAN 内から利用する構成は [IIS で HTTPS 終端する構成](iis.md) を参照してください。
