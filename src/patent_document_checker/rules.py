@@ -35,6 +35,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics.extend(check_long_embodiment_sentences(document.tree))
     diagnostics.extend(check_abstract_length(document.tree))
     diagnostics.extend(check_invention_title_matches_independent_claims(document.claims, document.tree))
+    diagnostics.extend(check_dependent_claim_invention_name_matches_references(document.claims))
     return diagnostics
 
 
@@ -506,8 +507,13 @@ def _claim_terminal_term(text: str) -> str:
 
     marker = "ことを特徴とする"
     if marker in normalized:
-        return normalized.rsplit(marker, maxsplit=1)[-1].strip("、，。．")
+        normalized = normalized.rsplit(marker, maxsplit=1)[-1]
 
+    normalized = re.sub(
+        r"^請求項[0-9０-９]+(?:(?:又は|または|及び|および|から|乃至|ないし|～|－|-|、|，|,)(?:請求項)?[0-9０-９]+)*に記載の",
+        "",
+        normalized,
+    )
     return normalized.strip("、，。．")
 
 
@@ -520,6 +526,52 @@ def _dedupe_strings_preserving_order(values: list[str]) -> list[str]:
         result.append(value)
         seen.add(value)
     return result
+
+
+def check_dependent_claim_invention_name_matches_references(
+    claims: list[Claim],
+) -> list[Diagnostic]:
+    by_number = {claim.number: claim for claim in claims}
+    terminal_terms = {
+        claim.number: _claim_terminal_term(claim.text) for claim in claims
+    }
+    diagnostics: list[Diagnostic] = []
+
+    for claim in claims:
+        if not claim.referenced_claims:
+            continue
+
+        claim_term = terminal_terms.get(claim.number, "")
+        if not claim_term:
+            continue
+
+        mismatches = []
+        for referenced in claim.referenced_claims:
+            referenced_claim = by_number.get(referenced)
+            if referenced_claim is None:
+                continue
+            referenced_term = terminal_terms.get(referenced, "")
+            if referenced_term and referenced_term != claim_term:
+                mismatches.append(f"請求項{referenced}: {referenced_term}")
+
+        if not mismatches:
+            continue
+
+        diagnostics.append(
+            Diagnostic(
+                rule_id="DEPENDENT_CLAIM_INVENTION_NAME_MISMATCH",
+                severity="error",
+                message=(
+                    f"請求項{claim.number}の発明の名称 {claim_term} は、"
+                    "参照元請求項の発明の名称と一致していません"
+                    f"（参照元: {', '.join(mismatches)}）。"
+                ),
+                location=_claim_location(claim),
+                suggestion="従属請求項の末尾語句と参照元請求項の末尾語句が一致しているか確認してください。",
+            )
+        )
+
+    return diagnostics
 
 
 def check_abstract_length(tree: object | None) -> list[Diagnostic]:
