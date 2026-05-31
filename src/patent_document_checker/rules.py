@@ -32,6 +32,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics.extend(check_claim_terms_in_embodiments(document.claims, document.tree))
     diagnostics.extend(check_claim_terms_in_tech_solution(document.claims, document.tree))
     diagnostics.extend(check_long_embodiment_sentences(document.tree))
+    diagnostics.extend(check_abstract_length(document.tree))
     return diagnostics
 
 
@@ -417,6 +418,34 @@ def _check_claim_terms_in_section(
                     suggestion=f"請求項の語句が{section_label}に記載されているか確認してください。",
                 )
             )
+
+    return diagnostics
+
+
+def check_abstract_length(tree: object | None) -> list[Diagnostic]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    diagnostics: list[Diagnostic] = []
+    for abstract in tree.find_all(kind="abstract_tag"):
+        text = _node_text(abstract)
+        length = len(text)
+        if length <= 400:
+            continue
+        diagnostics.append(
+            Diagnostic(
+                rule_id="ABSTRACT_LENGTH",
+                severity="error",
+                message=f"要約書の文字数が400文字を超えています（{length}文字）。",
+                location=DiagnosticLocation(
+                    source_type="document",
+                    section_type="abstract",
+                    block_index=getattr(abstract, "block_index", None),
+                    search_text="【要約】",
+                ),
+                suggestion="要約書を400文字以内にしてください。",
+            )
+        )
 
     return diagnostics
 

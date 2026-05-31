@@ -539,6 +539,49 @@ class DocumentCheckerTests(unittest.TestCase):
             )
         )
 
+    def test_errors_when_abstract_exceeds_400_characters(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】要約書",
+                    f"【要約】{'あ' * 401}",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "ABSTRACT_LENGTH"
+        ]
+
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].severity, "error")
+        self.assertEqual(diagnostics[0].message, "要約書の文字数が400文字を超えています（401文字）。")
+        self.assertEqual(diagnostics[0].location.section_type, "abstract")
+        self.assertEqual(diagnostics[0].location.search_text, "【要約】")
+
+    def test_allows_abstract_with_400_characters(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】要約書",
+                    f"【要約】{'あ' * 400}",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "ABSTRACT_LENGTH"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_warns_for_long_sentence_in_embodiments(self) -> None:
         long_sentence = "あ" * 199 + "。"
         result = check_text(
