@@ -539,6 +539,77 @@ class DocumentCheckerTests(unittest.TestCase):
             )
         )
 
+    def test_warns_for_long_sentence_in_embodiments(self) -> None:
+        long_sentence = "あ" * 199 + "。"
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    f"【０００１】{long_sentence}",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "LONG_EMBODIMENT_SENTENCE"
+        ]
+
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].severity, "warning")
+        self.assertEqual(diagnostics[0].message, "実施形態の一文が長すぎます（200文字）。")
+        self.assertEqual(diagnostics[0].location.search_text, "【0001】")
+
+    def test_allows_short_sentences_and_ignores_non_embodiment_long_sentences(self) -> None:
+        long_sentence = "あ" * 199 + "。"
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【背景技術】",
+                    f"【０００１】{long_sentence}",
+                    "【発明を実施するための形態】",
+                    f"【０００２】{'い' * 198}。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "LONG_EMBODIMENT_SENTENCE"
+                for diagnostic in result.diagnostics
+            )
+        )
+
+    def test_warns_for_fullwidth_period_long_sentence_in_embodiments(self) -> None:
+        long_sentence = "あ" * 199 + "．"
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【発明を実施するための形態】",
+                    f"【０００１】短文。{long_sentence}",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "LONG_EMBODIMENT_SENTENCE"
+        ]
+
+        self.assertEqual(len(diagnostics), 1)
+        self.assertEqual(diagnostics[0].message, "実施形態の一文が長すぎます（200文字）。")
+
     def test_warns_when_claim_term_is_missing_from_embodiments(self) -> None:
         result = check_text(
             "\n".join(

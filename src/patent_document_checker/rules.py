@@ -31,6 +31,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics.extend(check_term_sign_conflicts(document.tree))
     diagnostics.extend(check_claim_terms_in_embodiments(document.claims, document.tree))
     diagnostics.extend(check_claim_terms_in_tech_solution(document.claims, document.tree))
+    diagnostics.extend(check_long_embodiment_sentences(document.tree))
     return diagnostics
 
 
@@ -418,6 +419,47 @@ def _check_claim_terms_in_section(
             )
 
     return diagnostics
+
+
+def check_long_embodiment_sentences(tree: object | None) -> list[Diagnostic]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    diagnostics: list[Diagnostic] = []
+    for embodiment in tree.find_all(kind="description_of_embodiments"):
+        for paragraph in embodiment.find_all(kind="paragraph"):
+            for sentence in _paragraph_sentences(_node_text(paragraph)):
+                if len(sentence) < 200:
+                    continue
+                diagnostics.append(
+                    Diagnostic(
+                        rule_id="LONG_EMBODIMENT_SENTENCE",
+                        severity="warning",
+                        message=(
+                            f"実施形態の一文が長すぎます（{len(sentence)}文字）。"
+                        ),
+                        location=_paragraph_location(paragraph),
+                        suggestion="一文を200文字未満に分割できないか確認してください。",
+                    )
+                )
+
+    return diagnostics
+
+
+def _paragraph_sentences(text: str) -> list[str]:
+    sentences: list[str] = []
+    start = 0
+    for match in re.finditer(r"[。．]", text):
+        sentence = text[start : match.end()].strip()
+        if sentence:
+            sentences.append(sentence)
+        start = match.end()
+
+    tail = text[start:].strip()
+    if tail:
+        sentences.append(tail)
+
+    return sentences
 
 
 def check_claim_numbering(claims: list[Claim]) -> list[Diagnostic]:
