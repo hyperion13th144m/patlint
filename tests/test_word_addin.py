@@ -29,7 +29,10 @@ class WordAddinTests(unittest.TestCase):
         )
 
         self.assertIn("office.js", taskpane)
+        self.assertIn('<input id="api-url" type="url">', taskpane)
+        self.assertNotIn("127.0.0.1:8000", taskpane)
         self.assertIn("Word.run", script)
+        self.assertIn("window.location.origin", script)
         self.assertIn("/api/check-text", script)
         self.assertIn("document.body", script)
 

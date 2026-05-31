@@ -11,7 +11,10 @@
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-  const apiBase = () => $('#api-url').value.replace(/\/$/, '');
+  const apiUrlInput = $('#api-url');
+  apiUrlInput.value = window.location.origin;
+
+  const apiBase = () => apiUrlInput.value.replace(/\/$/, '');
 
   const setBusy = busy => {
     document.querySelectorAll('button').forEach(button => { button.disabled = busy; });
