@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
 from pathlib import Path
+import os
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from patent_document_checker.parser import parse_text
+from patent_document_checker.terms.dictionaries import load_dictionary_stems
 from patent_document_checker.terms import (
     extract_claim_term_occurrences,
     extract_claim_terms,
@@ -18,6 +21,30 @@ from patent_document_checker.terms import (
 
 
 class TermExtractionTests(unittest.TestCase):
+
+    def test_loads_dictionary_stems_from_default_and_custom_files(self) -> None:
+        original_cwd = Path.cwd()
+        load_dictionary_stems.cache_clear()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            words_dir = tmp_path / "words"
+            words_dir.mkdir()
+            (words_dir / "default-terms.txt").write_text(
+                "# default\n絞り\nばね\n", encoding="utf-8"
+            )
+            (words_dir / "custom-terms.txt").write_text(
+                "# custom\n冷却フィン\n絞り\n", encoding="utf-8"
+            )
+            os.chdir(tmp_path)
+            try:
+                self.assertEqual(
+                    load_dictionary_stems(),
+                    ("絞り", "ばね", "冷却フィン"),
+                )
+            finally:
+                os.chdir(original_cwd)
+                load_dictionary_stems.cache_clear()
+
     def test_extracts_ascii_katakana_iupac_and_kanji_terms(self) -> None:
         terms = extract_claim_terms(
             "前記CPUモジュールと、高速プロセッサと、"
