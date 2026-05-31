@@ -1,4 +1,4 @@
-# Codexハンドオフ：Patent Checker Suite 構想とMVP実装方針
+# 特許明細書チェックツール実装方針
 
 ## 目的
 
