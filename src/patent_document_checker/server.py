@@ -33,7 +33,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Patent Document Checker API server")
     parser.add_argument("--host", default=DEFAULT_HOST, help="bind host")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="bind port")
-    parser.add_argument("--path", default="/docs", help="path to open in the browser")
+    parser.add_argument("--path", default="/ui", help="path to open in the browser")
     parser.add_argument("--reload", action="store_true", help="enable uvicorn auto reload")
     browser = parser.add_mutually_exclusive_group()
     browser.add_argument(
@@ -41,7 +41,7 @@ def _parse_args() -> argparse.Namespace:
         dest="open",
         action="store_true",
         default=True,
-        help="open the API docs in a browser after startup",
+        help="open the API client UI in a browser after startup",
     )
     browser.add_argument(
         "--no-open",

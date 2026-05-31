@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from .data_paths import find_data_dir
+from .data_paths import find_data_dirs
 from .parser import PatentDocumentIR, RawBlock
 
 _NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?|\d+/\d+"
@@ -118,38 +118,44 @@ def _unit_expression_pattern(catalog: UnitCatalog) -> re.Pattern[str]:
 
 @lru_cache(maxsize=1)
 def _load_unit_catalog() -> UnitCatalog:
-    units_dir = find_data_dir("units", anchor=Path(__file__))
-    if units_dir is None:
+    units_dirs = find_data_dirs("units", anchor=Path(__file__))
+    if not units_dirs:
         return UnitCatalog(frozenset(), {})
 
-    si_data = _read_json(units_dir / "si_units.json", {})
-    non_si_data = _read_json(units_dir / "non_si_units.json", {})
-    custom_data = _read_json(units_dir / "custom_units.json", {})
-
     si_units: set[str] = set()
-    for key in ("base", "derived", "accepted"):
-        values = si_data.get(key, [])
-        if isinstance(values, list):
-            si_units.update(value for value in values if isinstance(value, str))
+    for units_dir in units_dirs:
+        si_data = _read_json(units_dir / "si_units.json", {})
+        for key in ("base", "derived", "accepted"):
+            values = si_data.get(key, [])
+            if isinstance(values, list):
+                si_units.update(value for value in values if isinstance(value, str))
 
-    custom_si = custom_data.get("si", [])
-    if isinstance(custom_si, list):
-        si_units.update(value for value in custom_si if isinstance(value, str))
-
-    non_si_units = {
-        unit: data
-        for unit, data in non_si_data.items()
-        if isinstance(unit, str) and isinstance(data, dict)
-    }
-    custom_non_si = custom_data.get("non_si", {})
-    if isinstance(custom_non_si, dict):
+    non_si_units: dict[str, dict[str, str]] = {}
+    for units_dir in units_dirs:
+        non_si_data = _read_json(units_dir / "non_si_units.json", {})
         non_si_units.update(
             {
                 unit: data
-                for unit, data in custom_non_si.items()
+                for unit, data in non_si_data.items()
                 if isinstance(unit, str) and isinstance(data, dict)
             }
         )
+
+    for units_dir in units_dirs:
+        custom_data = _read_json(units_dir / "custom_units.json", {})
+        custom_si = custom_data.get("si", [])
+        if isinstance(custom_si, list):
+            si_units.update(value for value in custom_si if isinstance(value, str))
+
+        custom_non_si = custom_data.get("non_si", {})
+        if isinstance(custom_non_si, dict):
+            non_si_units.update(
+                {
+                    unit: data
+                    for unit, data in custom_non_si.items()
+                    if isinstance(unit, str) and isinstance(data, dict)
+                }
+            )
 
     return UnitCatalog(frozenset(si_units), non_si_units)
 

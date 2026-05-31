@@ -37,10 +37,9 @@ class TermExtractionTests(unittest.TestCase):
             )
             os.chdir(tmp_path)
             try:
-                self.assertEqual(
-                    load_dictionary_stems(),
-                    ("絞り", "ばね", "冷却フィン"),
-                )
+                stems = load_dictionary_stems()
+                self.assertEqual(stems[:2], ("絞り", "ばね"))
+                self.assertIn("冷却フィン", stems)
             finally:
                 os.chdir(original_cwd)
                 load_dictionary_stems.cache_clear()

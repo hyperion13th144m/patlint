@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from ..data_paths import find_data_dir
+from ..data_paths import find_data_dirs
 
 
 DEFAULT_TERMS_FILENAME = "default-terms.txt"
@@ -12,13 +12,14 @@ CUSTOM_TERMS_FILENAME = "custom-terms.txt"
 
 @lru_cache(maxsize=1)
 def load_dictionary_stems() -> tuple[str, ...]:
-    words_dir = find_data_dir("words", anchor=Path(__file__))
-    if words_dir is None:
+    words_dirs = find_data_dirs("words", anchor=Path(__file__))
+    if not words_dirs:
         return ()
 
     stems: list[str] = []
     for filename in (DEFAULT_TERMS_FILENAME, CUSTOM_TERMS_FILENAME):
-        stems.extend(_load_terms_file(words_dir / filename))
+        for words_dir in words_dirs:
+            stems.extend(_load_terms_file(words_dir / filename))
     return tuple(_dedupe_preserving_order(stems))
 
 

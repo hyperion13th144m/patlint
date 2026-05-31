@@ -28,6 +28,9 @@
     body { margin: 0; color: var(--text); background: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     h1 { margin: 0; font-size: 20px; font-weight: 650; }
+    nav { display: flex; align-items: center; gap: 14px; }
+    nav a { color: var(--accent); font-size: 13px; font-weight: 650; text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
     main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; min-height: calc(100vh - 65px); }
     aside { border-right: 1px solid var(--border); padding: 20px; background: var(--panel); }
     section { padding: 20px 24px; overflow: auto; }
@@ -78,7 +81,10 @@
 <body>
   <header>
     <h1>PatLint</h1>
-    <span class="muted" id="health">API</span>
+    <nav aria-label="ヘッダナビゲーション">
+      <a href="/help" target="_blank" rel="noopener">ヘルプ</a>
+      <span class="muted" id="health">API</span>
+    </nav>
   </header>
   <main>
     <aside>

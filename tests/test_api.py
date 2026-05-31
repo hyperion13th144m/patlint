@@ -7,13 +7,20 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 try:
-    from patent_document_checker.api import TextCheckRequest, app, check_text_endpoint, ui
+    from patent_document_checker.api import (
+        TextCheckRequest,
+        app,
+        check_text_endpoint,
+        help_page,
+        ui,
+    )
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on local test env
     if exc.name != "fastapi":
         raise
     TextCheckRequest = None
     app = None
     check_text_endpoint = None
+    help_page = None
     ui = None
 
 
@@ -28,6 +35,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("PatLint", body)
         self.assertIn("/api/check-text", body)
         self.assertIn("/api/check-docx", body)
+        self.assertIn('href="/help"', body)
+        self.assertIn('target="_blank"', body)
         self.assertIn("/ui/assets/favicon.ico", body)
         self.assertIn("/ui/assets/favicon.svg", body)
         self.assertIn("語句出現表", body)
@@ -41,6 +50,29 @@ class ApiTests(unittest.TestCase):
     def test_ui_assets_are_mounted(self) -> None:
         self.assertTrue(
             any(getattr(route, "path", None) == "/ui/assets" for route in app.routes)
+        )
+
+    def test_help_page_shows_default_word_files(self) -> None:
+        response = help_page()
+        body = response.body.decode("utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.media_type)
+        self.assertIn("PatLint Help", body)
+        self.assertIn("チェックルール概要", body)
+        self.assertIn("FORBIDDEN_CHARACTER", body)
+        self.assertIn("CLAIM_DEPENDENCY", body)
+        self.assertIn("FIGURE_REFERENCE", body)
+        self.assertIn("default.json", body)
+        self.assertIn("default-terms.txt", body)
+        self.assertIn("extra.txt", body)
+        self.assertIn("claims_ng", body)
+        self.assertIn("ねじ", body)
+        self.assertIn("適宜", body)
+
+    def test_help_route_is_registered(self) -> None:
+        self.assertTrue(
+            any(getattr(route, "path", None) == "/help" for route in app.routes)
         )
 
     def test_check_text_endpoint(self) -> None:

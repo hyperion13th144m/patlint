@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 from importlib import resources
 from pathlib import Path
 import sys
@@ -9,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from .data_paths import find_data_dirs
 from .diagnostic_view import diagnostics_to_views
 from .engine import check_ir
 from .parser import PatentDocumentIR, parse_docx_bytes, parse_ooxml, parse_text
@@ -62,6 +64,48 @@ def ui() -> HTMLResponse:
             .read_text(encoding="utf-8")
         )
     return HTMLResponse(html)
+
+
+@app.get("/help", response_class=HTMLResponse)
+def help_page() -> HTMLResponse:
+    return HTMLResponse(_default_words_help_html())
+
+
+def _default_words_help_html() -> str:
+    template_path = _package_data_path("ui", "help.html")
+    if template_path is not None:
+        template = template_path.read_text(encoding="utf-8")
+    else:
+        template = (
+            resources.files("patent_document_checker.ui")
+            .joinpath("help.html")
+            .read_text(encoding="utf-8")
+        )
+    return template.replace("{{WORD_FILE_SECTIONS}}", _word_file_sections_html())
+
+
+def _word_file_sections_html() -> str:
+    files = ("default.json", "default-terms.txt", "extra.txt")
+    sections = []
+    for filename in files:
+        content = _read_first_words_file(filename)
+        body = html.escape(content if content is not None else "ファイルが見つかりません。")
+        sections.append(
+            f"""
+      <section class="file-section">
+        <h3>{html.escape(filename)}</h3>
+        <pre>{body}</pre>
+      </section>"""
+        )
+    return "".join(sections)
+
+
+def _read_first_words_file(filename: str) -> str | None:
+    for words_dir in find_data_dirs("words", anchor=Path(__file__)):
+        path = words_dir / filename
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+    return None
 
 
 @app.get("/health")

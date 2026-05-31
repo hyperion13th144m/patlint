@@ -59,6 +59,17 @@ words/custom-terms.txt
 
 これらの `custom` 実ファイルは `.gitignore` 対象です。`git pull` でローカル編集が上書きされないように、リポジトリには sample ファイルだけを含めます。
 
+Windows 版 `patent-checker-api.exe` を単体配布する場合は、exe と同じフォルダに `words` フォルダを作成し、必要に応じて `custom.json` / `custom-terms.txt` を配置します。`custom-sample.json` / `custom-terms-sample.txt` は見本ファイル名なので、そのままでは読み込まれません。
+
+```text
+patent-checker-api.exe
+words/
+  custom.json
+  custom-terms.txt
+```
+
+同梱されているデフォルト辞書はそのまま使われ、exe 横の `custom` ファイルは追加データとして読み込まれます。
+
 ## Run the API
 
 Installed package:
@@ -115,7 +126,7 @@ git push origin v0.1.0
 scripts\build-windows-exe.ps1
 ```
 
-作成された `dist\patent-checker-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで `/docs` を開きます。API クライアント画面は `http://127.0.0.1:8000/ui` です。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
+作成された `dist\patent-checker-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
 
 ## Run tests
 
