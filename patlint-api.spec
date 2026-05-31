@@ -53,7 +53,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="patent-checker-api",
+    name="patlint-api",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

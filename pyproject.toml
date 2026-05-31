@@ -1,5 +1,5 @@
 [project]
-name = "patent-checker"
+name = "patlint"
 version = "1.0.1"
 description = "Patent Document Checker MVP"
 readme = "README.md"
@@ -15,8 +15,8 @@ dev = ["pytest>=8"]
 exe = ["pyinstaller>=6.0"]
 
 [project.scripts]
-patent-document-checker = "patent_document_checker.cli:main"
-patent-document-checker-api = "patent_document_checker.server:main"
+patlint = "patent_document_checker.cli:main"
+patlint-api = "patent_document_checker.server:main"
 
 [build-system]
 requires = ["hatchling"]

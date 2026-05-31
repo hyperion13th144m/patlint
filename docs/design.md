@@ -374,7 +374,7 @@ Drawing Checkerの場合：
 将来統合を強く意識するならこちら。
 
 ```text
-patent-checker-suite/
+patlint-suite/
   apps/
     document-api/
     document-desktop/

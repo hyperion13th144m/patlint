@@ -4,8 +4,8 @@
 Installed package:
 
 ```bash
-patent-document-checker-api
-patent-document-checker-api --host 127.0.0.1 --port 8000 --no-open
+patlint-api
+patlint-api --host 127.0.0.1 --port 8000 --no-open
 ```
 
 From source:
@@ -39,8 +39,8 @@ PYTHONPATH=src python3 -m patent_document_checker.cli --text claims.txt --html r
 Windows ユーザー向けには、GitHub Actions で API サーバ起動用 exe を作成できます。
 
 - workflow: `.github/workflows/build-windows-exe.yml`
-- 出力 artifact: `patent-checker-api-windows`
-- exe 名: `patent-checker-api.exe`
+- 出力 artifact: `patlint-api-windows`
+- exe 名: `patlint-api.exe`
 
 GitHub の Actions タブから `Build Windows API exe` を手動実行するか、`v*` 形式のタグを push すると Windows runner 上で exe をビルドします。
 
@@ -55,7 +55,7 @@ git push origin v0.1.0
 scripts\build-windows-exe.ps1
 ```
 
-作成された `dist\patent-checker-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
+作成された `dist\patlint-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
 
 ## Run tests
 

@@ -59,10 +59,10 @@ words/custom-terms.txt
 
 これらの `custom` 実ファイルは `.gitignore` 対象です。`git pull` でローカル編集が上書きされないように、リポジトリには sample ファイルだけを含めます。
 
-Windows 版 `patent-checker-api.exe` を単体配布する場合は、exe と同じフォルダに `words` フォルダを作成し、必要に応じて `custom.json` / `custom-terms.txt` を配置します。`custom-sample.json` / `custom-terms-sample.txt` は見本ファイル名なので、そのままでは読み込まれません。
+Windows 版 `patlint-api.exe` を単体配布する場合は、exe と同じフォルダに `words` フォルダを作成し、必要に応じて `custom.json` / `custom-terms.txt` を配置します。`custom-sample.json` / `custom-terms-sample.txt` は見本ファイル名なので、そのままでは読み込まれません。
 
 ```text
-patent-checker-api.exe
+patlint-api.exe
 words/
   custom.json
   custom-terms.txt
@@ -75,8 +75,8 @@ words/
 Installed package:
 
 ```bash
-patent-document-checker-api
-patent-document-checker-api --host 127.0.0.1 --port 8000 --no-open
+patlint-api
+patlint-api --host 127.0.0.1 --port 8000 --no-open
 ```
 
 From source:
@@ -107,4 +107,4 @@ PYTHONPATH=src python3 -m patent_document_checker.cli --text claims.txt --html r
 
 ## Windows exe
 
-作成された `dist\patent-checker-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。
+作成された `dist\patlint-api.exe` をダブルクリックすると、API サーバを `127.0.0.1:8000` で起動し、ブラウザで API クライアント画面 `http://127.0.0.1:8000/ui` を開きます。ブラウザを開きたくない場合は、コマンドラインから `--no-open` を付けて起動します。

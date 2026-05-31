@@ -27,7 +27,7 @@ jobs:
         run: |
           $stdout = "api-smoke.stdout.log"
           $stderr = "api-smoke.stderr.log"
-          $process = Start-Process -FilePath "dist/patent-checker-api.exe" -ArgumentList "--no-open", "--port", "18080" -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+          $process = Start-Process -FilePath "dist/patlint-api.exe" -ArgumentList "--no-open", "--port", "18080" -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
           try {
             $response = $null
             for ($i = 0; $i -lt 30; $i++) {
@@ -67,16 +67,16 @@ jobs:
       - name: Prepare artifact bundle
         shell: pwsh
         run: |
-          $bundle = "dist/patent-checker-api-windows"
+          $bundle = "dist/patlint-api-windows"
           New-Item -ItemType Directory -Force -Path $bundle | Out-Null
           New-Item -ItemType Directory -Force -Path "$bundle/words" | Out-Null
-          Copy-Item "dist/patent-checker-api.exe" "$bundle/patent-checker-api.exe"
+          Copy-Item "dist/patlint-api.exe" "$bundle/patlint-api.exe"
           Copy-Item "words/custom-sample.json" "$bundle/words/custom-sample.json"
           Copy-Item "words/custom-terms-sample.txt" "$bundle/words/custom-terms-sample.txt"
 
       - name: Upload executable bundle
         uses: actions/upload-artifact@v4
         with:
-          name: patent-checker-api-windows
-          path: dist/patent-checker-api-windows
+          name: patlint-api-windows
+          path: dist/patlint-api-windows
           if-no-files-found: error
