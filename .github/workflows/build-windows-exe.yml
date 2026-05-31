@@ -25,10 +25,15 @@ jobs:
       - name: Smoke test executable
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath "dist/patent-checker-api.exe" -ArgumentList "--no-open", "--port", "18080" -PassThru
+          $stdout = "api-smoke.stdout.log"
+          $stderr = "api-smoke.stderr.log"
+          $process = Start-Process -FilePath "dist/patent-checker-api.exe" -ArgumentList "--no-open", "--port", "18080" -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
           try {
             $response = $null
             for ($i = 0; $i -lt 30; $i++) {
+              if ($process.HasExited) {
+                break
+              }
               try {
                 $response = Invoke-RestMethod -Uri "http://127.0.0.1:18080/health"
                 break
@@ -38,6 +43,18 @@ jobs:
               }
             }
             if ($null -eq $response -or $response.status -ne "ok") {
+              Write-Host "Process exited: $($process.HasExited)"
+              if ($process.HasExited) {
+                Write-Host "Exit code: $($process.ExitCode)"
+              }
+              if (Test-Path $stdout) {
+                Write-Host "--- stdout ---"
+                Get-Content $stdout
+              }
+              if (Test-Path $stderr) {
+                Write-Host "--- stderr ---"
+                Get-Content $stderr
+              }
               throw "Health check failed"
             }
           }

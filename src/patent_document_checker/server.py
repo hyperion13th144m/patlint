@@ -7,6 +7,8 @@ import webbrowser
 
 import uvicorn
 
+from patent_document_checker.api import app
+
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 
@@ -20,7 +22,7 @@ def main() -> None:
         threading.Timer(1.0, webbrowser.open, args=(url,)).start()
 
     uvicorn.run(
-        "patent_document_checker.api:app",
+        app,
         host=args.host,
         port=args.port,
         reload=args.reload,

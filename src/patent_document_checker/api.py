@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from importlib import resources
+from pathlib import Path
+import sys
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
@@ -15,12 +17,27 @@ from .terms import extract_document_terms_with_signs, extract_term_occurrences
 from .units import extract_unit_checks
 
 
+def _package_data_path(*parts: str) -> Path | None:
+    candidates: list[Path] = []
+    bundle_root = getattr(sys, "_MEIPASS", None)
+    if bundle_root:
+        candidates.append(Path(bundle_root, "patent_document_checker", *parts))
+    candidates.append(Path(__file__).resolve().parent.joinpath(*parts))
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 app = FastAPI(title="PatLint", version="0.1.0")
-app.mount(
-    "/ui/assets",
-    StaticFiles(packages=[("patent_document_checker.ui", "assets")]),
-    name="ui-assets",
-)
+_ui_assets_dir = _package_data_path("ui", "assets")
+if _ui_assets_dir is not None:
+    app.mount(
+        "/ui/assets",
+        StaticFiles(directory=str(_ui_assets_dir)),
+        name="ui-assets",
+    )
 
 
 class TextCheckRequest(BaseModel):
@@ -35,11 +52,15 @@ class OoxmlCheckRequest(BaseModel):
 
 @app.get("/ui", response_class=HTMLResponse)
 def ui() -> HTMLResponse:
-    html = (
-        resources.files("patent_document_checker.ui")
-        .joinpath("index.html")
-        .read_text(encoding="utf-8")
-    )
+    index_path = _package_data_path("ui", "index.html")
+    if index_path is not None:
+        html = index_path.read_text(encoding="utf-8")
+    else:
+        html = (
+            resources.files("patent_document_checker.ui")
+            .joinpath("index.html")
+            .read_text(encoding="utf-8")
+        )
     return HTMLResponse(html)
 
 

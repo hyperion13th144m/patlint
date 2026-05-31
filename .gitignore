@@ -3,3 +3,6 @@ __pycache__
 var
 words/custom.json
 words/custom-terms.txt
+build
+dist
+*.egg-info
