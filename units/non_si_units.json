@@ -1,0 +1,126 @@
+{
+  "cc": {
+    "message": "非SI：cm³ または mL を推奨",
+    "level": "WARNING"
+  },
+  "atm": {
+    "message": "非SI（気圧）：kPa または MPa を推奨",
+    "level": "WARNING"
+  },
+  "mmHg": {
+    "message": "非SI（水銀柱）：kPa を推奨",
+    "level": "WARNING"
+  },
+  "psi": {
+    "message": "非SI：kPa を推奨",
+    "level": "WARNING"
+  },
+  "bar": {
+    "message": "非SI：kPa を推奨",
+    "level": "WARNING"
+  },
+  "°C": {
+    "message": "SI併用可（摂氏）：K がSI基本単位",
+    "level": "INFO"
+  },
+  "℃": {
+    "message": "SI併用可（摂氏）：K がSI基本単位",
+    "level": "INFO"
+  },
+  "°F": {
+    "message": "非SI（華氏）：°C または K を推奨",
+    "level": "WARNING"
+  },
+  "cal": {
+    "message": "非SI（カロリー）：J を推奨",
+    "level": "WARNING"
+  },
+  "kcal": {
+    "message": "非SI（キロカロリー）：kJ を推奨",
+    "level": "WARNING"
+  },
+  "kWh": {
+    "message": "非SI：MJ を推奨（1kWh=3.6MJ）",
+    "level": "WARNING"
+  },
+  "kgf": {
+    "message": "非SI（重量キログラム）：N を推奨",
+    "level": "WARNING"
+  },
+  "inch": {
+    "message": "非SI（インチ）：mm または cm を推奨",
+    "level": "WARNING"
+  },
+  "in": {
+    "message": "非SI（インチ）：mm または cm を推奨",
+    "level": "WARNING"
+  },
+  "ft": {
+    "message": "非SI（フィート）：m を推奨",
+    "level": "WARNING"
+  },
+  "yd": {
+    "message": "非SI（ヤード）：m を推奨",
+    "level": "WARNING"
+  },
+  "mile": {
+    "message": "非SI（マイル）：km を推奨",
+    "level": "WARNING"
+  },
+  "lb": {
+    "message": "非SI（ポンド）：kg を推奨",
+    "level": "WARNING"
+  },
+  "lbs": {
+    "message": "非SI（ポンド）：kg を推奨",
+    "level": "WARNING"
+  },
+  "oz": {
+    "message": "非SI（オンス）：g または mL を推奨",
+    "level": "WARNING"
+  },
+  "gal": {
+    "message": "非SI（ガロン）：L を推奨",
+    "level": "WARNING"
+  },
+  "Å": {
+    "message": "非SI（オングストローム）：nm または pm を推奨",
+    "level": "WARNING"
+  },
+  "Torr": {
+    "message": "非SI：kPa を推奨",
+    "level": "WARNING"
+  },
+  "dyn": {
+    "message": "非SI（CGS）：N を推奨",
+    "level": "WARNING"
+  },
+  "erg": {
+    "message": "非SI（CGS）：J を推奨",
+    "level": "WARNING"
+  },
+  "Gauss": {
+    "message": "非SI（CGS）：mT を推奨",
+    "level": "WARNING"
+  },
+  "rad": {
+    "message": "非SI（ラド）：Gy を推奨",
+    "level": "WARNING"
+  },
+  "rem": {
+    "message": "非SI（レム）：Sv を推奨",
+    "level": "WARNING"
+  },
+  "sec": {
+    "message": "非推奨略記：s を推奨",
+    "level": "INFO"
+  },
+  "hr": {
+    "message": "非推奨略記：h を推奨",
+    "level": "INFO"
+  },
+  "msec": {
+    "message": "非推奨略記：ms を推奨",
+    "level": "INFO"
+  }
+}

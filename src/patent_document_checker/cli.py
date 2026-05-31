@@ -12,6 +12,7 @@ from .terms import (
     extract_document_terms_with_signs,
     extract_term_occurrences,
 )
+from .units import extract_unit_checks
 
 
 def main() -> None:
@@ -25,6 +26,7 @@ def main() -> None:
     term_occurrences = None
     terms_with_signs = None
     claims = None
+    unit_checks = None
     debug_terms_by_claim = None
     debug_terms_with_signs = None
     if args.text:
@@ -34,6 +36,7 @@ def main() -> None:
         if args.html:
             document = parse_text(text, source=args.text)
             claims = document.claims
+            unit_checks = extract_unit_checks(document)
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
             terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
@@ -46,6 +49,7 @@ def main() -> None:
         if args.html:
             document = parse_docx_bytes(docx_bytes, source=str(path))
             claims = document.claims
+            unit_checks = extract_unit_checks(document)
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
             terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
@@ -63,6 +67,7 @@ def main() -> None:
                 term_occurrences=term_occurrences,
                 terms_with_signs=terms_with_signs,
                 claims=claims,
+                unit_checks=unit_checks,
                 debug_terms_by_claim=debug_terms_by_claim,
                 debug_terms_with_signs=debug_terms_with_signs,
             ),

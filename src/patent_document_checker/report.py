@@ -30,6 +30,7 @@ def render_html_report(
     term_occurrences: Mapping[str, Sequence[str]] | None = None,
     terms_with_signs: Sequence[object] | None = None,
     claims: Sequence[object] | None = None,
+    unit_checks: Sequence[object] | None = None,
     debug_terms_by_claim: Mapping[int, Sequence[str]] | None = None,
     debug_terms_with_signs: Sequence[object] | None = None,
 ) -> str:
@@ -49,6 +50,7 @@ def render_html_report(
     summary = result.summary
     term_occurrences_html = _render_term_occurrences(term_occurrences)
     claim_relationships_html = _render_claim_relationships(claims)
+    unit_checks_html = _render_unit_checks(unit_checks)
     reference_sign_list_html = _render_reference_sign_list(terms_with_signs)
     debug_terms_html = _render_debug_terms(debug_terms_by_claim, debug_terms_with_signs)
     return f"""<!doctype html>
@@ -90,6 +92,7 @@ def render_html_report(
   </table>
   {term_occurrences_html}
   {claim_relationships_html}
+  {unit_checks_html}
   {reference_sign_list_html}
   {debug_terms_html}
 </body>
@@ -156,6 +159,38 @@ def _format_claim_numbers(numbers: Sequence[int]) -> str:
     if not numbers:
         return "－"
     return "、".join(f"請求項{number}" for number in numbers)
+
+
+def _render_unit_checks(unit_checks: Sequence[object] | None) -> str:
+    if unit_checks is None:
+        return ""
+
+    rows = []
+    for item in unit_checks:
+        rows.append(
+            "<tr>"
+            f"<td>{escape(str(getattr(item, 'line', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'col', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'matched', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'number', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'unit', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'level', '')))}</td>"
+            f"<td>{escape(str(getattr(item, 'message', '')))}</td>"
+            "</tr>"
+        )
+
+    if not rows:
+        rows.append('<tr><td colspan="7">No unit expressions.</td></tr>')
+
+    return (
+        '<section class="unit-checks">'
+        '<h2>単位チェック</h2>'
+        '<table>'
+        '<thead><tr><th>行</th><th>桁</th><th>マッチ</th><th>数値</th><th>単位</th><th>Level</th><th>Message</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody>'
+        '</table>'
+        '</section>'
+    )
 
 
 def _render_reference_sign_list(terms_with_signs: Sequence[object] | None) -> str:
