@@ -34,6 +34,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics.extend(check_claim_terms_in_tech_solution(document.claims, document.tree))
     diagnostics.extend(check_long_embodiment_sentences(document.tree))
     diagnostics.extend(check_abstract_length(document.tree))
+    diagnostics.extend(check_invention_title_matches_independent_claims(document.claims, document.tree))
     return diagnostics
 
 
@@ -443,6 +444,82 @@ def _check_claim_terms_in_section(
             )
 
     return diagnostics
+
+
+def check_invention_title_matches_independent_claims(
+    claims: list[Claim], tree: object | None
+) -> list[Diagnostic]:
+    title_terms = _invention_title_terms(tree)
+    if not title_terms:
+        return []
+
+    claim_terms = _independent_claim_terminal_terms(claims)
+    if title_terms == claim_terms:
+        return []
+
+    return [
+        Diagnostic(
+            rule_id="INVENTION_TITLE_CLAIM_MISMATCH",
+            severity="error",
+            message=(
+                "発明の名称と独立請求項の末尾語句が一致していません"
+                f"（発明の名称: {', '.join(title_terms)} / "
+                f"独立請求項: {', '.join(claim_terms) if claim_terms else 'なし'}）。"
+            ),
+            location=DiagnosticLocation(
+                source_type="document", section_type="invention_title"
+            ),
+            suggestion="発明の名称と独立請求項に記載された発明カテゴリが一致しているか確認してください。",
+        )
+    ]
+
+
+def _invention_title_terms(tree: object | None) -> list[str]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    terms: list[str] = []
+    for title in tree.find_all(kind="invention_title"):
+        for term in re.split(r"、|，|及び|並びに|および|ならびに", _node_text(title)):
+            stripped = term.strip()
+            if stripped:
+                terms.append(stripped)
+
+    return _dedupe_strings_preserving_order(terms)
+
+
+def _independent_claim_terminal_terms(claims: list[Claim]) -> list[str]:
+    terms = []
+    for claim in claims:
+        if claim.referenced_claims:
+            continue
+        term = _claim_terminal_term(claim.text)
+        if term:
+            terms.append(term)
+    return _dedupe_strings_preserving_order(terms)
+
+
+def _claim_terminal_term(text: str) -> str:
+    normalized = re.sub(r"\s+", "", text).strip("。．")
+    if not normalized:
+        return ""
+
+    marker = "ことを特徴とする"
+    if marker in normalized:
+        return normalized.rsplit(marker, maxsplit=1)[-1].strip("、，。．")
+
+    return normalized.strip("、，。．")
+
+
+def _dedupe_strings_preserving_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        result.append(value)
+        seen.add(value)
+    return result
 
 
 def check_abstract_length(tree: object | None) -> list[Diagnostic]:
