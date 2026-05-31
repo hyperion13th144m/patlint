@@ -17,6 +17,59 @@ class DocumentCheckerTests(unittest.TestCase):
         self.assertEqual([claim.number for claim in document.claims], [1, 2])
         self.assertEqual(document.claims[1].referenced_claims, [1])
 
+    def test_reports_forbidden_characters_as_errors(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【０００１】第①部材は半角ｶﾅと合成用丸⃝と髙さを含む。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "FORBIDDEN_CHARACTER"
+        ]
+
+        self.assertEqual([diagnostic.severity for diagnostic in diagnostics], ["error"] * 5)
+        self.assertEqual(
+            [diagnostic.location.search_text for diagnostic in diagnostics],
+            ["①", "ｶ", "ﾅ", "⃝", "髙"],
+        )
+        self.assertEqual(
+            [diagnostic.message for diagnostic in diagnostics],
+            [
+                "使用できない文字 ① が含まれています（丸付数字、位置: 8文字目）。",
+                "使用できない文字 ｶ が含まれています（半角カナ、位置: 14文字目）。",
+                "使用できない文字 ﾅ が含まれています（半角カナ、位置: 15文字目）。",
+                "使用できない文字 ⃝ が含まれています（合成用丸、位置: 21文字目）。",
+                "使用できない文字 髙 が含まれています（Shift_JISに変換できない文字、位置: 23文字目）。",
+            ],
+        )
+
+    def test_allows_jis_x0208_shift_jis_characters_and_ascii_space(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【０００１】ASCII text と漢字、ひらがな、カタカナ、記号○～－∥￢を含む。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "FORBIDDEN_CHARACTER"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_reports_missing_duplicate_self_and_future_references(self) -> None:
         result = check_text(
             "\n".join(
