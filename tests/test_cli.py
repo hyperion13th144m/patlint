@@ -9,6 +9,48 @@ from pathlib import Path
 
 
 class CliTests(unittest.TestCase):
+    def test_html_includes_reference_sign_list_without_debug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            input_path = Path(tmpdir) / "claims.txt"
+            output_path = Path(tmpdir) / "report.html"
+            input_path.write_text(
+                "\n".join(
+                    [
+                        "【書類名】明細書",
+                        "【発明を実施するための形態】",
+                        "【０００１】電極１０は冷却部２０に接続される。",
+                        "【書類名】特許請求の範囲",
+                        "【請求項1】電極を備える装置。",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "patent_document_checker.cli",
+                    "--text",
+                    str(input_path),
+                    "--html",
+                    str(output_path),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                cwd=Path(__file__).resolve().parents[1],
+                env={**os.environ, "PYTHONPATH": "src"},
+            )
+
+            html = output_path.read_text(encoding="utf-8")
+
+        self.assertIn("符号の説明用一覧", html)
+        self.assertIn("reference-output", html)
+        self.assertIn("電極", html)
+        self.assertIn("冷却部", html)
+        self.assertNotIn("Debug", html)
+
     def test_debug_html_includes_extracted_claim_terms(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             input_path = Path(tmpdir) / "claims.txt"

@@ -23,6 +23,7 @@ def main() -> None:
     args = parser.parse_args()
 
     term_occurrences = None
+    terms_with_signs = None
     debug_terms_by_claim = None
     debug_terms_with_signs = None
     if args.text:
@@ -32,9 +33,10 @@ def main() -> None:
         if args.html:
             document = parse_text(text, source=args.text)
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
+            terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
                 debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
-                debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
+                debug_terms_with_signs = terms_with_signs
     elif args.path:
         path = Path(args.path)
         docx_bytes = path.read_bytes()
@@ -42,9 +44,10 @@ def main() -> None:
         if args.html:
             document = parse_docx_bytes(docx_bytes, source=str(path))
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
+            terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
                 debug_terms_by_claim = extract_claim_terms_by_number(document.claims)
-                debug_terms_with_signs = extract_document_terms_with_signs(document.tree)
+                debug_terms_with_signs = terms_with_signs
     else:
         parser.error("provide a .docx path or --text")
 
@@ -55,6 +58,7 @@ def main() -> None:
             render_html_report(
                 result,
                 term_occurrences=term_occurrences,
+                terms_with_signs=terms_with_signs,
                 debug_terms_by_claim=debug_terms_by_claim,
                 debug_terms_with_signs=debug_terms_with_signs,
             ),

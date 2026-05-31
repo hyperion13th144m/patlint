@@ -52,6 +52,31 @@ class ReportTests(unittest.TestCase):
         self.assertLess(html.index("CPUモジュール"), html.index("アルミ箔"))
         self.assertLess(html.index("アルミ箔"), html.index("流路部材30"))
 
+    def test_reference_sign_list_is_rendered_for_html_report(self) -> None:
+        result = DiagnosticsResult(source="sample", product="document-checker")
+
+        html = render_html_report(
+            result,
+            terms_with_signs=[
+                TermWithSign("冷却部20", "冷却部", "20", "0002"),
+                TermWithSign("電極10", "電極", "10", "0001"),
+                TermWithSign("補助部A-2", "補助部", "A-2", "要約書"),
+                TermWithSign("電極10", "電極", "10", "0003"),
+            ],
+        )
+
+        self.assertIn("符号の説明用一覧", html)
+        self.assertIn("reference-output", html)
+        self.assertIn("三点リーダ", html)
+        self.assertIn("カンマ（，）", html)
+        self.assertIn('value="__newline__"', html)
+        self.assertNotIn('value="\\n"', html)
+        self.assertIn('=== "__newline__" ? "\\n"', html)
+        self.assertIn("昇順にソート", html)
+        self.assertLess(html.index("<td>A-2</td>"), html.index("<td>10</td>"))
+        self.assertLess(html.index("<td>10</td>"), html.index("<td>20</td>"))
+        self.assertIn("0001、0003", html)
+
     def test_debug_terms_are_omitted_by_default(self) -> None:
         result = DiagnosticsResult(source="sample", product="document-checker")
 
