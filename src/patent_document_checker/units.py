@@ -7,6 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from .data_paths import find_data_dir
 from .parser import PatentDocumentIR, RawBlock
 
 _NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[eE][+-]?\d+)?|\d+/\d+"
@@ -114,7 +115,7 @@ def _unit_expression_pattern(catalog: UnitCatalog) -> re.Pattern[str]:
 
 @lru_cache(maxsize=1)
 def _load_unit_catalog() -> UnitCatalog:
-    units_dir = _find_units_dir()
+    units_dir = find_data_dir("units", anchor=Path(__file__))
     if units_dir is None:
         return UnitCatalog(frozenset(), {})
 
@@ -154,20 +155,6 @@ def _read_json(path: Path, default: object) -> object:
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _find_units_dir() -> Path | None:
-    search_roots = (
-        Path.cwd(),
-        *Path.cwd().parents,
-        Path(__file__).resolve().parent,
-        *Path(__file__).resolve().parents,
-    )
-    for parent in search_roots:
-        candidate = parent / "units"
-        if candidate.is_dir():
-            return candidate
-    return None
 
 
 def _normalize_for_unit_check(text: str) -> tuple[str, list[int]]:

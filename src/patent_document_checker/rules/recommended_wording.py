@@ -9,6 +9,7 @@ import re
 
 from patent_checker_common import Diagnostic, DiagnosticLocation
 
+from ..data_paths import find_data_dir
 from ..parser import PatentDocumentIR
 from .common import _claim_location, _node_text, _paragraph_location
 
@@ -108,7 +109,7 @@ def _match_word_rule_patterns(
 
 @lru_cache(maxsize=1)
 def _load_word_rule_patterns() -> tuple[WordRulePattern, ...]:
-    words_dir = _find_words_dir()
+    words_dir = find_data_dir("words", anchor=Path(__file__))
     if words_dir is None:
         return ()
 
@@ -118,20 +119,6 @@ def _load_word_rule_patterns() -> tuple[WordRulePattern, ...]:
     patterns.extend(_load_extra_words(words_dir / "extra.txt"))
     patterns.extend(_load_python_patterns(words_dir / "patterns.py"))
     return tuple(_dedupe_word_rule_patterns(patterns))
-
-
-def _find_words_dir() -> Path | None:
-    search_roots = (
-        Path.cwd(),
-        *Path.cwd().parents,
-        Path(__file__).resolve().parent,
-        *Path(__file__).resolve().parents,
-    )
-    for parent in search_roots:
-        candidate = parent / "words"
-        if candidate.is_dir():
-            return candidate
-    return None
 
 
 def _load_word_json(path: Path) -> list[WordRulePattern]:
