@@ -7,11 +7,12 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 try:
-    from patent_document_checker.api import TextCheckRequest, check_text_endpoint, ui
+    from patent_document_checker.api import TextCheckRequest, app, check_text_endpoint, ui
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on local test env
     if exc.name != "fastapi":
         raise
     TextCheckRequest = None
+    app = None
     check_text_endpoint = None
     ui = None
 
@@ -24,11 +25,23 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.media_type)
-        self.assertIn("Patent Document Checker", body)
+        self.assertIn("PatLint", body)
         self.assertIn("/api/check-text", body)
         self.assertIn("/api/check-docx", body)
+        self.assertIn("/ui/assets/favicon.ico", body)
+        self.assertIn("/ui/assets/favicon.svg", body)
         self.assertIn("語句出現表", body)
         self.assertIn("符号の説明用一覧", body)
+        claim_index = body.index("renderClaimRelationships(data.claims")
+        reference_index = body.index("renderReferenceSigns(data.reference_sign_entries")
+        term_index = body.index("renderTermOccurrences(data.term_occurrences")
+        self.assertLess(claim_index, reference_index)
+        self.assertLess(reference_index, term_index)
+
+    def test_ui_assets_are_mounted(self) -> None:
+        self.assertTrue(
+            any(getattr(route, "path", None) == "/ui/assets" for route in app.routes)
+        )
 
     def test_check_text_endpoint(self) -> None:
         data = check_text_endpoint(

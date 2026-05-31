@@ -1,6 +1,7 @@
-# Patent Checker
+# PatLint
 
-Patent Document Checker MVP v0.1 implementation based on `docs/design.md`.
+PatLint is a patent document checker.
+PatLint は、特許明細書・特許請求の範囲・要約書のテキストをチェックするツールです。
 
 ## チェックルール概要
 

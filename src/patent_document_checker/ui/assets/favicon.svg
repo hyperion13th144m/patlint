@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <clipPath id="sc">
+      <path d="M50 2 L95 18 L95 62 Q95 88 50 98 Q5 88 5 62 L5 18 Z"/>
+    </clipPath>
+  </defs>
+  <!-- Shield -->
+  <path d="M50 2 L95 18 L95 62 Q95 88 50 98 Q5 88 5 62 L5 18 Z" fill="#0f2940"/>
+  <!-- Top accent stripe -->
+  <path d="M50 2 L95 18 L95 32 L18 2 Z" fill="#e8a020" opacity="0.85" clip-path="url(#sc)"/>
+  <!-- Checkmark -->
+  <polyline points="20,58 40,78 80,35"
+            fill="none" stroke="#4fa3e0" stroke-width="14"
+            stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

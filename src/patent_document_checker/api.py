@@ -4,6 +4,7 @@ from importlib import resources
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .diagnostic_view import diagnostics_to_views
@@ -14,7 +15,12 @@ from .terms import extract_document_terms_with_signs, extract_term_occurrences
 from .units import extract_unit_checks
 
 
-app = FastAPI(title="Patent Document Checker", version="0.1.0")
+app = FastAPI(title="PatLint", version="0.1.0")
+app.mount(
+    "/ui/assets",
+    StaticFiles(packages=[("patent_document_checker.ui", "assets")]),
+    name="ui-assets",
+)
 
 
 class TextCheckRequest(BaseModel):

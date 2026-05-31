@@ -3,7 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Patent Document Checker</title>
+  <title>PatLint</title>
+  <link rel="icon" href="/ui/assets/favicon.ico" sizes="any">
+  <link rel="icon" href="/ui/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/ui/assets/favicon_16.png" sizes="16x16" type="image/png">
+  <link rel="icon" href="/ui/assets/favicon_32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/ui/assets/favicon_48.png" sizes="48x48" type="image/png">
+  <link rel="icon" href="/ui/assets/favicon_128.png" sizes="128x128" type="image/png">
+  <link rel="icon" href="/ui/assets/favicon_192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/ui/assets/favicon_192.png">
   <style>
     :root {
       color-scheme: light;
@@ -69,7 +77,7 @@
 </head>
 <body>
   <header>
-    <h1>Patent Document Checker</h1>
+    <h1>PatLint</h1>
     <span class="muted" id="health">API</span>
   </header>
   <main>
@@ -144,10 +152,10 @@
       result.className = '';
       result.innerHTML = [
         renderDiagnostics(data.diagnostic_views || []),
-        renderTermOccurrences(data.term_occurrences || {}),
         renderClaimRelationships(data.claims || []),
-        renderUnitChecks(data.unit_checks || []),
-        renderReferenceSigns(data.reference_sign_entries || [])
+        renderReferenceSigns(data.reference_sign_entries || []),
+        renderTermOccurrences(data.term_occurrences || {}),
+        renderUnitChecks(data.unit_checks || [])
       ].join('');
       attachReferenceControls(data.reference_sign_entries || []);
     };

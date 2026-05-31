@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>Patent Document Checker Report</title>
+  <title>PatLint Report</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 32px; color: #1f2937; background: #ffffff; }
     table { border-collapse: collapse; width: 100%; table-layout: fixed; }
@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>Patent Document Checker Report</h1>
+  <h1>PatLint Report</h1>
   <p>Source: {{SOURCE}}</p>
   <div class="summary">
     Errors: {{ERROR_COUNT}} /
@@ -48,10 +48,10 @@
       {{DIAGNOSTIC_ROWS}}
     </tbody>
   </table>
-  {{TERM_OCCURRENCES_SECTION}}
   {{CLAIM_RELATIONSHIPS_SECTION}}
-  {{UNIT_CHECKS_SECTION}}
   {{REFERENCE_SIGN_LIST_SECTION}}
+  {{TERM_OCCURRENCES_SECTION}}
+  {{UNIT_CHECKS_SECTION}}
   {{DEBUG_TERMS_SECTION}}
 </body>
 </html>

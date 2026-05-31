@@ -11,7 +11,7 @@ from patent_document_checker.units import extract_unit_checks_from_blocks
 
 
 class UnitExtractionTests(unittest.TestCase):
-    def test_extracts_si_non_si_unknown_and_fullwidth_units(self) -> None:
+    def test_extracts_si_non_si_and_fullwidth_units(self) -> None:
         results = extract_unit_checks_from_blocks(
             [
                 RawBlock(
@@ -52,15 +52,6 @@ class UnitExtractionTests(unittest.TestCase):
                     "level": "INFO",
                     "message": "SI併用可（摂氏）：K がSI基本単位",
                 },
-                {
-                    "line": 1,
-                    "col": 32,
-                    "matched": "3.5foo",
-                    "number": "3.5",
-                    "unit": "foo",
-                    "level": "INFO",
-                    "message": "UNKNOWN：単位リストにない単位です",
-                },
             ],
         )
 
@@ -95,9 +86,15 @@ class UnitExtractionTests(unittest.TestCase):
             [
                 ("10inch", "inch", "非SI（インチ）：mm または cm を推奨"),
                 ("20in", "in", "非SI（インチ）：mm または cm を推奨"),
-                ("30inside", "inside", "UNKNOWN：単位リストにない単位です"),
             ],
         )
+
+    def test_does_not_report_unknown_units_or_reference_signs(self) -> None:
+        results = extract_unit_checks_from_blocks(
+            [RawBlock(id="b0", index=0, text="自動車４ａは、比較例3.5fooと異なる。")]
+        )
+
+        self.assertEqual(results, [])
 
 
 if __name__ == "__main__":

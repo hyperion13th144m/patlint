@@ -74,7 +74,10 @@ def extract_unit_checks_from_blocks(blocks: list[RawBlock]) -> list[UnitCheckRes
             start = index_map[match.start()]
             end = index_map[match.end() - 1] + 1
             original_match = block.text[start:end]
-            level, message = _classify_unit(unit, catalog)
+            classification = _classify_unit(unit, catalog)
+            if classification is None:
+                continue
+            level, message = classification
             results.append(
                 UnitCheckResult(
                     line=block.index + 1,
@@ -90,13 +93,13 @@ def extract_unit_checks_from_blocks(blocks: list[RawBlock]) -> list[UnitCheckRes
     return results
 
 
-def _classify_unit(unit: str, catalog: UnitCatalog) -> tuple[str, str]:
+def _classify_unit(unit: str, catalog: UnitCatalog) -> tuple[str, str] | None:
     if unit in catalog.si_units:
         return "INFO", "SI単位またはSI併用単位です"
     if unit in catalog.non_si_units:
         entry = catalog.non_si_units[unit]
         return entry.get("level", "WARNING"), entry.get("message", "非SI単位です")
-    return "INFO", "UNKNOWN：単位リストにない単位です"
+    return None
 
 
 def _unit_expression_pattern(catalog: UnitCatalog) -> re.Pattern[str]:

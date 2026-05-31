@@ -39,6 +39,22 @@ class ReportTests(unittest.TestCase):
         self.assertIn("パルス印加部5", html)
         self.assertIn("0001", html)
 
+    def test_claim_relationships_and_reference_signs_are_before_term_occurrences(self) -> None:
+        result = DiagnosticsResult(source="sample", product="document-checker")
+
+        html = render_html_report(
+            result,
+            claims=[Claim(number=1, text="装置。")],
+            term_occurrences={"電極": ["0001"]},
+            terms_with_signs=[TermWithSign("電極10", "電極", "10", "0001")],
+        )
+
+        claim_index = html.index("請求項の関係")
+        reference_index = html.index("符号の説明用一覧")
+        term_index = html.index("語句出現表")
+        self.assertLess(claim_index, reference_index)
+        self.assertLess(reference_index, term_index)
+
     def test_term_occurrences_are_sorted_by_term(self) -> None:
         result = DiagnosticsResult(source="sample", product="document-checker")
 
