@@ -40,10 +40,17 @@
     .pill.error { color: var(--error); border-color: #fecaca; background: #fef2f2; }
     .pill.warning { color: var(--warning); border-color: #fde68a; background: #fffbeb; }
     .pill.info { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border: 1px solid var(--border); padding: 8px; vertical-align: top; text-align: left; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 8px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
     th { background: #f3f4f6; position: sticky; top: 0; }
     .empty { border: 1px dashed var(--border); border-radius: 8px; padding: 28px; color: var(--muted); background: var(--panel); }
+    .diagnostics-table th:nth-child(1), .diagnostics-table td:nth-child(1) { width: 92px; }
+    .diagnostics-table th:nth-child(2), .diagnostics-table td:nth-child(2) { width: 170px; }
+    .diagnostic-meta { margin-top: 6px; color: var(--muted); font-size: 12px; }
+    .severity-badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    .severity-error .severity-badge { color: #991b1b; background: #fee2e2; }
+    .severity-warning .severity-badge { color: #92400e; background: #fef3c7; }
+    .severity-info .severity-badge { color: #1e40af; background: #dbeafe; }
     .result-section { margin-top: 26px; }
     .result-section:first-child { margin-top: 0; }
     .result-section h2 { font-size: 18px; margin: 0 0 10px; }
@@ -136,7 +143,7 @@
       `;
       result.className = '';
       result.innerHTML = [
-        renderDiagnostics(data.diagnostics || []),
+        renderDiagnostics(data.diagnostic_views || []),
         renderTermOccurrences(data.term_occurrences || {}),
         renderClaimRelationships(data.claims || []),
         renderUnitChecks(data.unit_checks || []),
@@ -155,18 +162,19 @@
     const renderDiagnostics = diagnostics => {
       if (!diagnostics.length) return section('診断結果', '<div class="empty">No diagnostics.</div>');
       return section('診断結果', `
-        <table>
+        <table class="diagnostics-table">
           <thead>
-            <tr><th>Severity</th><th>Rule</th><th>Message</th><th>Location</th><th>Suggestion</th></tr>
+            <tr><th>区分</th><th>ルール</th><th>内容</th></tr>
           </thead>
           <tbody>
             ${diagnostics.map(diagnostic => `
-              <tr>
-                <td>${escapeHtml(diagnostic.severity)}</td>
-                <td>${escapeHtml(diagnostic.rule_id)}</td>
-                <td>${escapeHtml(diagnostic.message)}</td>
-                <td>${escapeHtml(JSON.stringify(diagnostic.location || {}))}</td>
-                <td>${escapeHtml(diagnostic.suggestion || '')}</td>
+              <tr class="severity-${escapeHtml(diagnostic.severity)}">
+                <td><span class="severity-badge">${escapeHtml(diagnostic.severity_label)}</span></td>
+                <td>${escapeHtml(diagnostic.rule_label)}</td>
+                <td>
+                  <div>${escapeHtml(diagnostic.message)}</div>
+                  <div class="diagnostic-meta">${escapeHtml(diagnostic.rule_id)} / ${escapeHtml(diagnostic.location)}</div>
+                </td>
               </tr>
             `).join('')}
           </tbody>

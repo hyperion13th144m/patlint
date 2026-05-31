@@ -5,9 +5,22 @@
   <title>Patent Document Checker Report</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.6; margin: 32px; color: #1f2937; background: #ffffff; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; }
+    table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+    th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; overflow-wrap: anywhere; }
     th { background: #f3f4f6; text-align: left; }
+    .diagnostics-table th:nth-child(1), .diagnostics-table td:nth-child(1) { width: 88px; }
+    .diagnostics-table th:nth-child(2), .diagnostics-table td:nth-child(2) { width: 168px; }
+    .diagnostic-meta { margin-top: 6px; color: #6b7280; font-size: 12px; }
+    .severity-badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    .severity-error .severity-badge { color: #991b1b; background: #fee2e2; }
+    .severity-warning .severity-badge { color: #92400e; background: #fef3c7; }
+    .severity-info .severity-badge { color: #1e40af; background: #dbeafe; }
+    @media print {
+      body { margin: 12mm; font-size: 11pt; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      .reference-controls, .copy-button, .copy-state { display: none; }
+    }
     .summary { margin: 16px 0 24px; }
     section { margin-top: 28px; }
     .reference-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 12px 0; }
@@ -27,9 +40,9 @@
     Warnings: {{WARNING_COUNT}} /
     Info: {{INFO_COUNT}}
   </div>
-  <table>
+  <table class="diagnostics-table">
     <thead>
-      <tr><th>Severity</th><th>Rule</th><th>Message</th><th>Location</th><th>Suggestion</th></tr>
+      <tr><th>区分</th><th>ルール</th><th>内容</th></tr>
     </thead>
     <tbody>
       {{DIAGNOSTIC_ROWS}}

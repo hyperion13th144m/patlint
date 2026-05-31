@@ -6,6 +6,8 @@ from pathlib import Path
 
 from patent_checker_common import DiagnosticsResult
 
+from ..diagnostic_view import diagnostics_to_views
+
 from .reference_signs import render_reference_sign_list
 from .sections import (
     render_claim_relationships,
@@ -57,15 +59,13 @@ def _render_template(template: str, values: Mapping[str, str]) -> str:
 
 def _render_diagnostic_rows(result: DiagnosticsResult) -> str:
     rows = []
-    for diagnostic in result.diagnostics:
-        location = diagnostic.location.to_dict() if diagnostic.location else {}
+    for diagnostic in diagnostics_to_views(result.diagnostics):
         rows.append(
-            "<tr>"
-            f"<td>{escape(diagnostic.severity)}</td>"
-            f"<td>{escape(diagnostic.rule_id)}</td>"
-            f"<td>{escape(diagnostic.message)}</td>"
-            f"<td>{escape(str(location))}</td>"
-            f"<td>{escape(diagnostic.suggestion or '')}</td>"
+            f'<tr class="severity-{escape(diagnostic["severity"])}">'
+            f'<td><span class="severity-badge">{escape(diagnostic["severity_label"])}</span></td>'
+            f'<td>{escape(diagnostic["rule_label"])}</td>'
+            f'<td><div>{escape(diagnostic["message"])}</div>'
+            f'<div class="diagnostic-meta">{escape(diagnostic["rule_id"])} / {escape(diagnostic["location"])}</div></td>'
             "</tr>"
         )
-    return "".join(rows) or '<tr><td colspan="5">No diagnostics.</td></tr>'
+    return "".join(rows) or '<tr><td colspan="3">No diagnostics.</td></tr>'

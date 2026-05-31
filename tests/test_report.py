@@ -6,7 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from patent_checker_common import DiagnosticsResult
+from patent_checker_common import Diagnostic, DiagnosticLocation, DiagnosticsResult
 from patent_document_checker.parser import Claim
 from patent_document_checker.report import render_html_report
 from patent_document_checker.terms import TermWithSign
@@ -124,6 +124,38 @@ class ReportTests(unittest.TestCase):
         self.assertLess(html.index("<td>A-2</td>"), html.index("<td>10</td>"))
         self.assertLess(html.index("<td>10</td>"), html.index("<td>20</td>"))
         self.assertIn("0001、0003", html)
+
+
+    def test_diagnostics_use_print_friendly_view(self) -> None:
+        result = DiagnosticsResult(
+            source="sample",
+            product="document-checker",
+            diagnostics=[
+                Diagnostic(
+                    rule_id="CLAIM_NUMBERING",
+                    severity="error",
+                    message="請求項2が欠落しています。",
+                    location=DiagnosticLocation(source_type="document", section_type="claims"),
+                    suggestion="請求項番号が連続しているか確認してください。",
+                ),
+                Diagnostic(
+                    rule_id="PARAGRAPH_END_PUNCTUATION",
+                    severity="warning",
+                    message="段落の末尾が句点「。」で終わっていません。",
+                    location=DiagnosticLocation(search_text="【0001】"),
+                ),
+            ],
+        )
+
+        html = render_html_report(result)
+
+        self.assertIn("<tr><th>区分</th><th>ルール</th><th>内容</th></tr>", html)
+        self.assertIn("severity-error", html)
+        self.assertIn("severity-warning", html)
+        self.assertIn("請求項番号", html)
+        self.assertIn("段落末尾句点", html)
+        self.assertIn("段落【0001】", html)
+        self.assertNotIn("<th>Suggestion</th>", html)
 
     def test_debug_terms_are_omitted_by_default(self) -> None:
         result = DiagnosticsResult(source="sample", product="document-checker")

@@ -6,6 +6,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from .diagnostic_view import diagnostics_to_views
 from .engine import check_ir
 from .parser import PatentDocumentIR, parse_docx_bytes, parse_ooxml, parse_text
 from .report.reference_signs import reference_sign_entries
@@ -67,10 +68,12 @@ async def check_docx_endpoint(file: UploadFile = File(...)) -> dict:
 
 
 def _document_response(document: PatentDocumentIR) -> dict:
-    result = check_ir(document).to_dict()
+    check_result = check_ir(document)
+    result = check_result.to_dict()
     terms_with_signs = extract_document_terms_with_signs(document.tree)
     result.update(
         {
+            "diagnostic_views": diagnostics_to_views(check_result.diagnostics),
             "term_occurrences": extract_term_occurrences(document.claims, document.tree),
             "claims": [_claim_to_dict(claim) for claim in document.claims],
             "unit_checks": [item.to_dict() for item in extract_unit_checks(document)],

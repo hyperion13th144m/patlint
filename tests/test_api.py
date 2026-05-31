@@ -41,6 +41,24 @@ class ApiTests(unittest.TestCase):
         self.assertIn("claims", data)
         self.assertIn("unit_checks", data)
         self.assertIn("reference_sign_entries", data)
+        self.assertIn("diagnostic_views", data)
+
+    def test_check_text_endpoint_includes_diagnostic_views(self) -> None:
+        data = check_text_endpoint(
+            TextCheckRequest(
+                text="\n".join([
+                    "【書類名】明細書",
+                    "【技術分野】",
+                    "【０００１】本文",
+                ]),
+                source="api-test",
+            )
+        )
+
+        views = data["diagnostic_views"]
+        self.assertTrue(any(view["rule_label"] == "段落末尾句点" for view in views))
+        self.assertTrue(any(view["location"] == "段落【0001】" for view in views))
+        self.assertTrue(all("suggestion" not in view for view in views))
 
 
 if __name__ == "__main__":
