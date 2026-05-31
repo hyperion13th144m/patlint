@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from xml.etree import ElementTree
 
-from .claim_parser import Claim, extract_claim_references, extract_claims
+from .claim_parser import Claim, extract_claims
 
 W_NAMESPACE = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 APPLICATION_FORM_TAG_RE = re.compile(r"【書類名】\s*特許願")
