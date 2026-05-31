@@ -23,6 +23,7 @@ def run_document_rules(document: PatentDocumentIR) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     diagnostics.extend(check_forbidden_characters(document.raw_blocks))
     diagnostics.extend(check_paragraph_numbering(document.tree))
+    diagnostics.extend(check_paragraph_end_punctuation(document.tree))
     diagnostics.extend(check_claim_numbering(document.claims))
     diagnostics.extend(check_claim_dependency(document.claims))
     diagnostics.extend(check_multi_multi_claim(document.claims))
@@ -137,6 +138,28 @@ def check_paragraph_numbering(tree: object | None) -> list[Diagnostic]:
         previous = paragraph
 
     return []
+
+
+def check_paragraph_end_punctuation(tree: object | None) -> list[Diagnostic]:
+    if tree is None or not hasattr(tree, "find_all"):
+        return []
+
+    diagnostics: list[Diagnostic] = []
+    for paragraph in tree.find_all(kind="paragraph"):
+        text = _node_text(paragraph).rstrip()
+        if not text or text.endswith("。"):
+            continue
+        diagnostics.append(
+            Diagnostic(
+                rule_id="PARAGRAPH_END_PUNCTUATION",
+                severity="error",
+                message="段落の末尾が句点「。」で終わっていません。",
+                location=_paragraph_location(paragraph),
+                suggestion="段落末尾を句点「。」で終えるよう確認してください。",
+            )
+        )
+
+    return diagnostics
 
 
 def check_missing_claim_term_reference_prefix(claims: list[Claim]) -> list[Diagnostic]:

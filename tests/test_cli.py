@@ -45,6 +45,8 @@ class CliTests(unittest.TestCase):
 
             html = output_path.read_text(encoding="utf-8")
 
+        self.assertIn("請求項の関係", html)
+        self.assertIn("<td>請求項1</td><td>－</td><td>－</td><td>独立項</td><td>－</td>", html)
         self.assertIn("符号の説明用一覧", html)
         self.assertIn("reference-output", html)
         self.assertIn("電極", html)

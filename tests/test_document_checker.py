@@ -183,6 +183,58 @@ class DocumentCheckerTests(unittest.TestCase):
         )
         self.assertEqual(diagnostics[0].location.search_text, "【0004】")
 
+    def test_errors_when_paragraph_does_not_end_with_fullwidth_period(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【技術分野】",
+                    "【０００１】本文",
+                    "【０００２】本文．",
+                    "【０００３】本文。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        diagnostics = [
+            diagnostic
+            for diagnostic in result.diagnostics
+            if diagnostic.rule_id == "PARAGRAPH_END_PUNCTUATION"
+        ]
+
+        self.assertEqual(len(diagnostics), 2)
+        self.assertEqual([diagnostic.severity for diagnostic in diagnostics], ["error", "error"])
+        self.assertEqual(
+            [diagnostic.location.search_text for diagnostic in diagnostics],
+            ["【0001】", "【0002】"],
+        )
+        self.assertEqual(
+            diagnostics[0].message,
+            "段落の末尾が句点「。」で終わっていません。",
+        )
+
+    def test_allows_paragraph_ending_with_fullwidth_period(self) -> None:
+        result = check_text(
+            "\n".join(
+                [
+                    "【書類名】明細書",
+                    "【技術分野】",
+                    "【０００１】本文。",
+                    "【書類名】特許請求の範囲",
+                    "【請求項１】装置。",
+                ]
+            )
+        )
+
+        self.assertFalse(
+            any(
+                diagnostic.rule_id == "PARAGRAPH_END_PUNCTUATION"
+                for diagnostic in result.diagnostics
+            )
+        )
+
     def test_allows_sequential_paragraph_numbers(self) -> None:
         result = check_text(
             "\n".join(

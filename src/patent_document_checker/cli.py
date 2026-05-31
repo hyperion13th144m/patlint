@@ -24,6 +24,7 @@ def main() -> None:
 
     term_occurrences = None
     terms_with_signs = None
+    claims = None
     debug_terms_by_claim = None
     debug_terms_with_signs = None
     if args.text:
@@ -32,6 +33,7 @@ def main() -> None:
         result = check_text(text, source=args.text)
         if args.html:
             document = parse_text(text, source=args.text)
+            claims = document.claims
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
             terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
@@ -43,6 +45,7 @@ def main() -> None:
         result = check_docx_bytes(docx_bytes, source=str(path))
         if args.html:
             document = parse_docx_bytes(docx_bytes, source=str(path))
+            claims = document.claims
             term_occurrences = extract_term_occurrences(document.claims, document.tree)
             terms_with_signs = extract_document_terms_with_signs(document.tree)
             if args.debug:
@@ -59,6 +62,7 @@ def main() -> None:
                 result,
                 term_occurrences=term_occurrences,
                 terms_with_signs=terms_with_signs,
+                claims=claims,
                 debug_terms_by_claim=debug_terms_by_claim,
                 debug_terms_with_signs=debug_terms_with_signs,
             ),

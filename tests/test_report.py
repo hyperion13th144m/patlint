@@ -7,6 +7,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from patent_checker_common import DiagnosticsResult
+from patent_document_checker.parser import Claim
 from patent_document_checker.report import render_html_report
 from patent_document_checker.terms import TermWithSign
 
@@ -51,6 +52,29 @@ class ReportTests(unittest.TestCase):
 
         self.assertLess(html.index("CPUモジュール"), html.index("アルミ箔"))
         self.assertLess(html.index("アルミ箔"), html.index("流路部材30"))
+
+    def test_claim_relationships_are_rendered_for_html_report(self) -> None:
+        result = DiagnosticsResult(source="sample", product="document-checker")
+        claims = [
+            Claim(number=1, text="装置。"),
+            Claim(number=2, text="請求項1に記載の装置。", referenced_claims=[1]),
+            Claim(
+                number=3,
+                text="請求項1又は2に記載の装置。",
+                referenced_claims=[1, 2],
+                is_multiple_dependent=True,
+                references_multiple_dependent=True,
+                is_multi_multi=True,
+            ),
+        ]
+
+        html = render_html_report(result, claims=claims)
+
+        self.assertIn("請求項の関係", html)
+        self.assertIn("<th>従属先</th>", html)
+        self.assertIn("<td>請求項1</td><td>－</td><td>請求項2、請求項3</td><td>独立項</td><td>－</td>", html)
+        self.assertIn("<td>請求項2</td><td>請求項1</td><td>請求項3</td><td>従属項</td><td>－</td>", html)
+        self.assertIn("<td>請求項3</td><td>請求項1、請求項2</td><td>－</td><td>複数従属項</td><td>マルチマルチ、複数従属項を引用</td>", html)
 
     def test_reference_sign_list_is_rendered_for_html_report(self) -> None:
         result = DiagnosticsResult(source="sample", product="document-checker")
