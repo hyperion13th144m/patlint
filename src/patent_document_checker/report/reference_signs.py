@@ -85,23 +85,22 @@ def _normalize_sign_for_sort(sign: str) -> str:
     )
 
 
-def _sign_sort_key(sign: str) -> tuple[object, ...]:
+def _sign_sort_key(sign: str) -> tuple[int, str, int, int, int, str]:
     normalized = _normalize_sign_for_sort(sign)
     match = re.match(r"^([A-Z]+)?(?:-)?(\d+)?(.*)$", normalized)
     if match is None:
-        return (3, normalized)
+        return (3, normalized, 0, 0, 0, "")
 
     letters = match.group(1) or ""
-    number = int(match.group(2)) if match.group(2) else None
+    number = int(match.group(2)) if match.group(2) else 0
+    has_number = 1 if match.group(2) else 0
     rest = match.group(3) or ""
 
-    if letters and number is None:
-        return (0, letters, rest)
-    if letters and number is not None:
-        return (0, letters, 0, number, rest)
-    if number is not None:
-        return (1, number, _sign_rest_rank(rest), rest)
-    return (2, normalized)
+    if letters:
+        return (0, letters, has_number, number, _sign_rest_rank(rest), rest)
+    if match.group(2):
+        return (1, "", 1, number, _sign_rest_rank(rest), rest)
+    return (2, normalized, 0, 0, 0, "")
 
 
 def _sign_rest_rank(rest: str) -> int:

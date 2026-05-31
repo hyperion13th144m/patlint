@@ -141,6 +141,26 @@ class ReportTests(unittest.TestCase):
         self.assertLess(html.index("<td>10</td>"), html.index("<td>20</td>"))
         self.assertIn("0001、0003", html)
 
+    def test_reference_sign_sort_handles_mixed_sign_shapes(self) -> None:
+        result = DiagnosticsResult(source="sample", product="document-checker")
+
+        html = render_html_report(
+            result,
+            terms_with_signs=[
+                TermWithSign("部材B", "部材", "B", "0001"),
+                TermWithSign("部材10", "部材", "10", "0001"),
+                TermWithSign("部材A-2", "部材", "A-2", "0001"),
+                TermWithSign("部材A", "部材", "A", "0001"),
+                TermWithSign("部材21", "部材", "21", "0001"),
+                TermWithSign("部材10a", "部材", "10a", "0001"),
+                TermWithSign("部材10-A", "部材", "10-A", "0001"),
+                TermWithSign("部材20’", "部材", "20’", "0001"),
+            ],
+        )
+
+        ordered_signs = ["A", "A-2", "B", "10", "10a", "10-A", "20’", "21"]
+        positions = [html.index(f"<td>{sign}</td>") for sign in ordered_signs]
+        self.assertEqual(positions, sorted(positions))
 
     def test_diagnostics_use_print_friendly_view(self) -> None:
         result = DiagnosticsResult(
