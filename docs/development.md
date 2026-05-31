@@ -81,3 +81,7 @@ office-addin/manifest.xml
 ```
 
 API サーバは `/addin/...` を静的配信します。manifest は `http://127.0.0.1:8000/addin/taskpane.html` を参照します。
+
+## TODO
+
+- Word アドインの `manifest.xml` は現在 URL を手編集する運用です。IIS など環境別の HTTPS URL に合わせやすくするため、manifest 生成コマンドまたは manifest テンプレート化を検討します。
