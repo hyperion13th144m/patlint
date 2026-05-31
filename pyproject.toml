@@ -1,22 +1,18 @@
 [project]
 name = "patent-checker"
-version = "0.1.0"
+version = "1.0.1"
 description = "Patent Document Checker MVP"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi>=0.115",
-  "python-multipart>=0.0.9",
-  "uvicorn[standard]>=0.30",
+    "fastapi>=0.115",
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.optional-dependencies]
-dev = [
-  "pytest>=8",
-]
-exe = [
-  "pyinstaller>=6.0",
-]
+dev = ["pytest>=8"]
+exe = ["pyinstaller>=6.0"]
 
 [project.scripts]
 patent-document-checker = "patent_document_checker.cli:main"
