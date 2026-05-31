@@ -1,0 +1,118 @@
+<section class="reference-sign-list">
+  <h2>符号の説明用一覧</h2>
+  <div class="reference-controls">
+    <label>連結記号
+      <select id="reference-joiner">
+        <option value="…" selected>三点リーダ</option>
+        <option value="　">空白</option>
+      </select>
+    </label>
+    <label>区切り文字
+      <select id="reference-separator">
+        <option value="、">読点（、）</option>
+        <option value="，" selected>カンマ（，）</option>
+        <option value="__newline__">改行</option>
+      </select>
+    </label>
+    <label>符号
+      <select id="reference-width">
+        <option value="full" selected>全角</option>
+        <option value="half">半角</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="reference-sort" checked> 昇順にソート</label>
+    <button type="button" class="copy-button" id="reference-copy">コピー</button>
+  </div>
+  <div class="reference-output" id="reference-output"></div>
+  <div class="copy-state" id="reference-copy-state"></div>
+  <h3>抽出元</h3>
+  <table>
+    <thead><tr><th>符号</th><th>語句</th><th>出現場所</th></tr></thead>
+    <tbody>{{REFERENCE_SIGN_ROWS}}</tbody>
+  </table>
+  <script type="application/json" id="reference-sign-data">{{REFERENCE_SIGN_DATA}}</script>
+  <script>
+    (() => {
+      const data = JSON.parse(document.querySelector("#reference-sign-data").textContent);
+      const output = document.querySelector("#reference-output");
+      const state = document.querySelector("#reference-copy-state");
+      const selected = id => document.querySelector(id).value;
+      const normalizeSign = value => value
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
+        .replace(/[－ー―‐]/g, "-")
+        .replace(/[’＇]/g, "'")
+        .replace(/[　\s]+/g, "")
+        .toUpperCase();
+      const toFullWidth = value => value
+        .replace(/[A-Za-z0-9]/g, char => String.fromCharCode(char.charCodeAt(0) + 0xFEE0))
+        .replace(/-/g, "－")
+        .replace(/'/g, "’");
+      const toHalfWidth = value => value
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
+        .replace(/[－ー―‐]/g, "-")
+        .replace(/[’＇]/g, "'");
+      const restRank = rest => {
+        if (!rest) return 0;
+        if (/^[A-ZＡ-Ｚａ-ｚぁ-んァ-ヶ]/.test(rest)) return 1;
+        if (/^-/.test(rest)) return 2;
+        return 3;
+      };
+      const signRank = sign => {
+        const normalized = normalizeSign(sign);
+        const match = normalized.match(/^([A-Z]+)?(?:-)?(\d+)?(.*)$/);
+        if (!match) return [3, normalized];
+        const letters = match[1] || "";
+        const number = match[2] ? Number(match[2]) : null;
+        const rest = match[3] || "";
+        if (letters && number === null) return [0, letters, rest];
+        if (letters && number !== null) return [0, letters, 0, number, rest];
+        if (number !== null) return [1, number, restRank(rest), rest];
+        return [2, normalized];
+      };
+      const compareRank = (left, right) => {
+        const max = Math.max(left.length, right.length);
+        for (let i = 0; i < max; i += 1) {
+          if (left[i] === right[i]) continue;
+          if (left[i] === undefined) return -1;
+          if (right[i] === undefined) return 1;
+          if (typeof left[i] === "number" && typeof right[i] === "number") return left[i] - right[i];
+          return String(left[i]).localeCompare(String(right[i]), "ja", { numeric: true });
+        }
+        return 0;
+      };
+      const render = () => {
+        const joiner = selected("#reference-joiner");
+        const separator = selected("#reference-separator") === "__newline__" ? "\n" : selected("#reference-separator");
+        const width = selected("#reference-width");
+        const items = data.map((entry, index) => ({ ...entry, index }));
+        if (document.querySelector("#reference-sort").checked) {
+          items.sort((a, b) => compareRank(signRank(a.sign), signRank(b.sign)) || a.index - b.index);
+        }
+        output.textContent = items.map(entry => {
+          const sign = width === "full" ? toFullWidth(entry.sign) : toHalfWidth(entry.sign);
+          return `${sign}${joiner}${entry.term}`;
+        }).join(separator);
+        state.textContent = "";
+      };
+      document.querySelectorAll("#reference-joiner, #reference-separator, #reference-width, #reference-sort")
+        .forEach(element => element.addEventListener("change", render));
+      document.querySelector("#reference-copy").addEventListener("click", async () => {
+        if (!output.textContent) return;
+        try {
+          await navigator.clipboard.writeText(output.textContent);
+        } catch (error) {
+          const helper = document.createElement("textarea");
+          helper.value = output.textContent;
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.append(helper);
+          helper.select();
+          document.execCommand("copy");
+          helper.remove();
+        }
+        state.textContent = "コピーしました";
+      });
+      render();
+    })();
+  </script>
+</section>
