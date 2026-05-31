@@ -29,7 +29,7 @@ def render_reference_sign_list(terms_with_signs: Sequence[object] | None) -> str
     if terms_with_signs is None:
         return ""
 
-    entries = _reference_sign_entries(terms_with_signs)
+    entries = reference_sign_entries(terms_with_signs)
     rows = []
     for entry in entries:
         rows.append(
@@ -49,7 +49,7 @@ def render_reference_sign_list(terms_with_signs: Sequence[object] | None) -> str
     )
 
 
-def _reference_sign_entries(terms_with_signs: Sequence[object]) -> list[dict[str, str]]:
+def reference_sign_entries(terms_with_signs: Sequence[object]) -> list[dict[str, str]]:
     entries_by_key: dict[tuple[str, str], dict[str, str]] = {}
     for item in terms_with_signs:
         sign = str(getattr(item, "sign", "") or "").strip()

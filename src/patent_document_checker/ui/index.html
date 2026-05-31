@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patent Document Checker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --border: #d1d5db;
+      --muted: #6b7280;
+      --panel: #f9fafb;
+      --text: #111827;
+      --accent: #1f6f5b;
+      --error: #b91c1c;
+      --warning: #a16207;
+      --info: #1d4ed8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    h1 { margin: 0; font-size: 20px; font-weight: 650; }
+    main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; min-height: calc(100vh - 65px); }
+    aside { border-right: 1px solid var(--border); padding: 20px; background: var(--panel); }
+    section { padding: 20px 24px; overflow: auto; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 6px; }
+    textarea { width: 100%; min-height: 260px; resize: vertical; border: 1px solid var(--border); border-radius: 6px; padding: 10px; font: 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; background: #fff; }
+    input[type="file"] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: #fff; }
+    button { min-height: 36px; border: 1px solid var(--accent); border-radius: 6px; padding: 0 14px; color: #fff; background: var(--accent); font-weight: 600; cursor: pointer; }
+    button.secondary { color: var(--text); border-color: var(--border); background: #fff; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .tabs button { color: var(--text); border-color: var(--border); background: #fff; }
+    .tabs button.active { color: #fff; border-color: var(--accent); background: var(--accent); }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .hidden { display: none; }
+    .summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .pill { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; background: #fff; font-size: 13px; }
+    .pill.error { color: var(--error); border-color: #fecaca; background: #fef2f2; }
+    .pill.warning { color: var(--warning); border-color: #fde68a; background: #fffbeb; }
+    .pill.info { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid var(--border); padding: 8px; vertical-align: top; text-align: left; }
+    th { background: #f3f4f6; position: sticky; top: 0; }
+    .empty { border: 1px dashed var(--border); border-radius: 8px; padding: 28px; color: var(--muted); background: var(--panel); }
+    .result-section { margin-top: 26px; }
+    .result-section:first-child { margin-top: 0; }
+    .result-section h2 { font-size: 18px; margin: 0 0 10px; }
+    .reference-output { white-space: pre-wrap; word-break: break-word; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 12px; line-height: 1.9; margin: 10px 0 12px; }
+    .reference-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+    .reference-controls label { margin: 0; }
+    .reference-controls select { min-height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: #fff; }
+    .reference-controls .check { display: flex; align-items: center; gap: 6px; min-height: 34px; }
+    .status { min-height: 20px; margin-top: 10px; }
+    .error-text { color: var(--error); }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Patent Document Checker</h1>
+    <span class="muted" id="health">API</span>
+  </header>
+  <main>
+    <aside>
+      <div class="tabs">
+        <button type="button" id="text-tab" class="active">テキスト</button>
+        <button type="button" id="docx-tab">docx</button>
+      </div>
+
+      <form id="text-form">
+        <label for="text-input">チェック対象テキスト</label>
+        <textarea id="text-input" spellcheck="false" placeholder="【書類名】明細書&#10;【０００１】本文。&#10;【書類名】特許請求の範囲&#10;【請求項１】装置。"></textarea>
+        <div class="actions">
+          <button type="submit" id="text-submit">解析</button>
+          <button type="button" class="secondary" id="clear-text">クリア</button>
+        </div>
+      </form>
+
+      <form id="docx-form" class="hidden">
+        <label for="docx-input">docx ファイル</label>
+        <input id="docx-input" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <div class="actions">
+          <button type="submit" id="docx-submit">アップロードして解析</button>
+        </div>
+      </form>
+
+      <div class="status muted" id="status"></div>
+    </aside>
+
+    <section>
+      <div class="summary" id="summary"></div>
+      <div id="result" class="empty">解析結果がここに表示されます。</div>
+    </section>
+  </main>
+
+  <script>
+    const state = { result: null };
+    const $ = selector => document.querySelector(selector);
+    const status = $('#status');
+    const summary = $('#summary');
+    const result = $('#result');
+
+    const setMode = mode => {
+      $('#text-tab').classList.toggle('active', mode === 'text');
+      $('#docx-tab').classList.toggle('active', mode === 'docx');
+      $('#text-form').classList.toggle('hidden', mode !== 'text');
+      $('#docx-form').classList.toggle('hidden', mode !== 'docx');
+      status.textContent = '';
+    };
+
+    const setBusy = busy => {
+      document.querySelectorAll('button').forEach(button => button.disabled = busy);
+      if (busy) status.textContent = '解析中...';
+    };
+
+    const escapeHtml = value => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const render = data => {
+      state.result = data;
+      const counts = data.summary || { error: 0, warning: 0, info: 0 };
+      summary.innerHTML = `
+        <span class="pill error">Error ${counts.error ?? 0}</span>
+        <span class="pill warning">Warning ${counts.warning ?? 0}</span>
+        <span class="pill info">Info ${counts.info ?? 0}</span>
+        <span class="pill">Source ${escapeHtml(data.source || '')}</span>
+      `;
+      result.className = '';
+      result.innerHTML = [
+        renderDiagnostics(data.diagnostics || []),
+        renderTermOccurrences(data.term_occurrences || {}),
+        renderClaimRelationships(data.claims || []),
+        renderUnitChecks(data.unit_checks || []),
+        renderReferenceSigns(data.reference_sign_entries || [])
+      ].join('');
+      attachReferenceControls(data.reference_sign_entries || []);
+    };
+
+    const section = (title, body) => `
+      <div class="result-section">
+        <h2>${escapeHtml(title)}</h2>
+        ${body}
+      </div>
+    `;
+
+    const renderDiagnostics = diagnostics => {
+      if (!diagnostics.length) return section('診断結果', '<div class="empty">No diagnostics.</div>');
+      return section('診断結果', `
+        <table>
+          <thead>
+            <tr><th>Severity</th><th>Rule</th><th>Message</th><th>Location</th><th>Suggestion</th></tr>
+          </thead>
+          <tbody>
+            ${diagnostics.map(diagnostic => `
+              <tr>
+                <td>${escapeHtml(diagnostic.severity)}</td>
+                <td>${escapeHtml(diagnostic.rule_id)}</td>
+                <td>${escapeHtml(diagnostic.message)}</td>
+                <td>${escapeHtml(JSON.stringify(diagnostic.location || {}))}</td>
+                <td>${escapeHtml(diagnostic.suggestion || '')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `);
+    };
+
+    const renderTermOccurrences = occurrences => {
+      const rows = Object.entries(occurrences).sort(([a], [b]) => a.localeCompare(b, 'ja'));
+      if (!rows.length) return section('語句出現表', '<div class="empty">No term occurrences.</div>');
+      return section('語句出現表', `
+        <table>
+          <thead><tr><th>語句</th><th>出現場所</th></tr></thead>
+          <tbody>
+            ${rows.map(([term, locations]) => `
+              <tr><td>${escapeHtml(term)}</td><td>${escapeHtml((locations || []).join('、'))}</td></tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `);
+    };
+
+    const formatClaimNumbers = numbers => {
+      if (!numbers || !numbers.length) return '－';
+      return numbers.map(number => `請求項${number}`).join('、');
+    };
+
+    const renderClaimRelationships = claims => {
+      const incoming = new Map(claims.map(claim => [Number(claim.number), []]));
+      claims.forEach(claim => {
+        (claim.referenced_claims || []).forEach(number => {
+          const key = Number(number);
+          if (!incoming.has(key)) incoming.set(key, []);
+          incoming.get(key).push(Number(claim.number));
+        });
+      });
+      const rows = [...claims].sort((a, b) => Number(a.number) - Number(b.number));
+      if (!rows.length) return section('請求項の関係', '<div class="empty">No claims.</div>');
+      return section('請求項の関係', `
+        <table>
+          <thead><tr><th>請求項</th><th>従属先</th><th>被従属</th><th>種別</th><th>状態</th></tr></thead>
+          <tbody>
+            ${rows.map(claim => {
+              const references = (claim.referenced_claims || []).map(Number);
+              const relation = !references.length ? '独立項' : new Set(references).size > 1 ? '複数従属項' : '従属項';
+              const states = [];
+              if (claim.is_multi_multi) states.push('マルチマルチ');
+              if (claim.references_multi_multi) states.push('マルチマルチを引用');
+              if (claim.references_multiple_dependent) states.push('複数従属項を引用');
+              const incomingClaims = [...new Set(incoming.get(Number(claim.number)) || [])].sort((a, b) => a - b);
+              return `
+                <tr>
+                  <td>請求項${escapeHtml(claim.number)}</td>
+                  <td>${escapeHtml(formatClaimNumbers(references))}</td>
+                  <td>${escapeHtml(formatClaimNumbers(incomingClaims))}</td>
+                  <td>${escapeHtml(relation)}</td>
+                  <td>${escapeHtml(states.length ? states.join('、') : '－')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `);
+    };
+
+    const renderUnitChecks = unitChecks => {
+      if (!unitChecks.length) return section('単位チェック', '<div class="empty">No unit expressions.</div>');
+      return section('単位チェック', `
+        <table>
+          <thead><tr><th>行</th><th>桁</th><th>マッチ</th><th>数値</th><th>単位</th><th>Level</th><th>Message</th></tr></thead>
+          <tbody>
+            ${unitChecks.map(item => `
+              <tr>
+                <td>${escapeHtml(item.line)}</td>
+                <td>${escapeHtml(item.col)}</td>
+                <td>${escapeHtml(item.matched)}</td>
+                <td>${escapeHtml(item.number)}</td>
+                <td>${escapeHtml(item.unit)}</td>
+                <td>${escapeHtml(item.level)}</td>
+                <td>${escapeHtml(item.message)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `);
+    };
+
+    const renderReferenceSigns = entries => section('符号の説明用一覧', `
+      <div class="reference-controls">
+        <label>連結記号
+          <select id="reference-joiner">
+            <option value="…" selected>三点リーダ</option>
+            <option value="　">空白</option>
+          </select>
+        </label>
+        <label>区切り文字
+          <select id="reference-separator">
+            <option value="、">読点（、）</option>
+            <option value="，" selected>カンマ（，）</option>
+            <option value="__newline__">改行</option>
+          </select>
+        </label>
+        <label>符号
+          <select id="reference-width">
+            <option value="full" selected>全角</option>
+            <option value="half">半角</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="reference-sort" checked> 昇順にソート</label>
+      </div>
+      <div class="reference-output" id="reference-output"></div>
+      <h2>抽出元</h2>
+      ${entries.length ? `
+        <table>
+          <thead><tr><th>符号</th><th>語句</th><th>出現場所</th></tr></thead>
+          <tbody>
+            ${entries.map(entry => `
+              <tr>
+                <td>${escapeHtml(entry.sign)}</td>
+                <td>${escapeHtml(entry.term)}</td>
+                <td>${escapeHtml(entry.source)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div class="empty">No signed terms.</div>'}
+    `);
+
+    const normalizeSign = value => String(value)
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
+      .replace(/[－ー―‐]/g, '-')
+      .replace(/[’＇]/g, "'")
+      .replace(/[　\s]+/g, '')
+      .toUpperCase();
+    const toFullWidth = value => String(value)
+      .replace(/[A-Za-z0-9]/g, char => String.fromCharCode(char.charCodeAt(0) + 0xFEE0))
+      .replace(/-/g, '－')
+      .replace(/'/g, '’');
+    const toHalfWidth = value => normalizeSign(value).replace(/'/g, "'");
+    const signRank = sign => {
+      const normalized = normalizeSign(sign);
+      const match = normalized.match(/^([A-Z]+)?(?:-)?(\d+)?(.*)$/);
+      if (!match) return [3, normalized];
+      const letters = match[1] || '';
+      const number = match[2] ? Number(match[2]) : null;
+      const rest = match[3] || '';
+      if (letters && number === null) return [0, letters, rest];
+      if (letters && number !== null) return [0, letters, 0, number, rest];
+      if (number !== null) return [1, number, /^[A-ZＡ-Ｚａ-ｚぁ-んァ-ヶ]/.test(rest) ? 1 : rest.startsWith('-') ? 2 : 3, rest];
+      return [2, normalized];
+    };
+    const compareRank = (left, right) => {
+      const max = Math.max(left.length, right.length);
+      for (let i = 0; i < max; i += 1) {
+        if (left[i] === right[i]) continue;
+        if (left[i] === undefined) return -1;
+        if (right[i] === undefined) return 1;
+        if (typeof left[i] === 'number' && typeof right[i] === 'number') return left[i] - right[i];
+        return String(left[i]).localeCompare(String(right[i]), 'ja', { numeric: true });
+      }
+      return 0;
+    };
+
+    const attachReferenceControls = entries => {
+      const output = $('#reference-output');
+      if (!output) return;
+      const renderReferenceOutput = () => {
+        const joiner = $('#reference-joiner').value;
+        const separator = $('#reference-separator').value === '__newline__' ? '\n' : $('#reference-separator').value;
+        const width = $('#reference-width').value;
+        const items = entries.map((entry, index) => ({ ...entry, index }));
+        if ($('#reference-sort').checked) {
+          items.sort((a, b) => compareRank(signRank(a.sign), signRank(b.sign)) || a.index - b.index);
+        }
+        output.textContent = items.map(entry => {
+          const sign = width === 'full' ? toFullWidth(entry.sign) : toHalfWidth(entry.sign);
+          return `${sign}${joiner}${entry.term}`;
+        }).join(separator);
+      };
+      document.querySelectorAll('#reference-joiner, #reference-separator, #reference-width, #reference-sort')
+        .forEach(element => element.addEventListener('change', renderReferenceOutput));
+      renderReferenceOutput();
+    };
+
+    const showError = message => {
+      status.innerHTML = `<span class="error-text">${escapeHtml(message)}</span>`;
+    };
+
+    const requestJson = async (url, options) => {
+      setBusy(true);
+      try {
+        const response = await fetch(url, options);
+        const text = await response.text();
+        let data = {};
+        if (text) data = JSON.parse(text);
+        if (!response.ok) throw new Error(data.detail || response.statusText);
+        render(data);
+        status.textContent = '解析が完了しました。';
+      } catch (error) {
+        showError(error.message || String(error));
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    $('#text-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const text = $('#text-input').value;
+      if (!text.trim()) {
+        showError('テキストを入力してください。');
+        return;
+      }
+      requestJson('/api/check-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, source: 'ui-text' })
+      });
+    });
+
+    $('#docx-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const file = $('#docx-input').files[0];
+      if (!file) {
+        showError('docx ファイルを選択してください。');
+        return;
+      }
+      const form = new FormData();
+      form.append('file', file);
+      requestJson('/api/check-docx', { method: 'POST', body: form });
+    });
+
+    $('#text-tab').addEventListener('click', () => setMode('text'));
+    $('#docx-tab').addEventListener('click', () => setMode('docx'));
+    $('#clear-text').addEventListener('click', () => { $('#text-input').value = ''; });
+
+    fetch('/health')
+      .then(response => response.json())
+      .then(data => { $('#health').textContent = data.status === 'ok' ? 'API ready' : 'API'; })
+      .catch(() => { $('#health').textContent = 'API unavailable'; });
+  </script>
+</body>
+</html>

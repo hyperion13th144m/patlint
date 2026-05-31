@@ -6,7 +6,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from patent_document_checker.parser import extract_claim_references, parse_text
+from patent_document_checker.claim_parser import extract_claim_references
+from patent_document_checker.parser import parse_text
 
 
 class ClaimParserTests(unittest.TestCase):
