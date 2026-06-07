@@ -47,7 +47,7 @@ def diagnostics_to_views(diagnostics: Iterable[Diagnostic]) -> list[dict[str, st
     return [diagnostic_to_view(diagnostic) for diagnostic in diagnostics]
 
 
-def diagnostic_to_view(diagnostic: Diagnostic) -> dict[str, str]:
+def diagnostic_to_view(diagnostic: Diagnostic) -> dict:
     return {
         "severity": diagnostic.severity,
         "severity_label": SEVERITY_LABELS.get(diagnostic.severity, diagnostic.severity.upper()),
@@ -55,6 +55,7 @@ def diagnostic_to_view(diagnostic: Diagnostic) -> dict[str, str]:
         "rule_label": rule_label(diagnostic.rule_id),
         "message": diagnostic.message,
         "location": location_label(diagnostic.location),
+        "location_data": location_data(diagnostic.location),
     }
 
 
@@ -79,6 +80,21 @@ def location_label(location: DiagnosticLocation | None) -> str:
     if location.block_index is not None:
         return f"ブロック{location.block_index + 1}"
     return "－"
+
+
+def location_data(location: DiagnosticLocation | None) -> dict | None:
+    if location is None:
+        return None
+    data: dict = {}
+    if location.block_index is not None:
+        data["block_index"] = location.block_index
+    if location.section_type is not None:
+        data["section_type"] = location.section_type
+    if location.claim_number is not None:
+        data["claim_number"] = location.claim_number
+    if location.search_text is not None:
+        data["search_text"] = location.search_text
+    return data or None
 
 
 def _normalize_search_text(search_text: str) -> str:

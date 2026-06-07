@@ -34,11 +34,16 @@
 
   const renderDiagnostics = diagnostics => {
     if (!diagnostics.length) return section('診断結果', '<div class="empty">No diagnostics.</div>');
-    return section('診断結果', `<table><thead><tr><th>区分</th><th>内容</th></tr></thead><tbody>${diagnostics.map(item => `
-      <tr>
+    return section('診断結果', `<table><thead><tr><th>区分</th><th>内容</th></tr></thead><tbody>${diagnostics.map((item, idx) => {
+      const hasLocation = item.location_data && (item.location_data.search_text != null || item.location_data.block_index != null);
+      const jumpBtn = hasLocation
+        ? `<button class="secondary jump-btn" data-diag-idx="${idx}">移動</button>`
+        : '';
+      return `<tr>
         <td>${escapeHtml(item.severity_label || item.severity)}</td>
-        <td>${escapeHtml(item.message)}<div class="meta">${escapeHtml(item.rule_label || item.rule_id)} / ${escapeHtml(item.location || '')}</div></td>
-      </tr>`).join('')}</tbody></table>`);
+        <td>${escapeHtml(item.message)}<div class="meta">${escapeHtml(item.rule_label || item.rule_id)} / ${escapeHtml(item.location || '')}</div>${jumpBtn}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`);
   };
 
   const renderClaims = claims => {
@@ -76,7 +81,39 @@
     return section('単位チェック', `<table><thead><tr><th>マッチ</th><th>単位</th><th>内容</th></tr></thead><tbody>${units.map(item => `<tr><td>${escapeHtml(item.matched)}</td><td>${escapeHtml(item.unit)}</td><td>${escapeHtml(item.message)}</td></tr>`).join('')}</tbody></table>`);
   };
 
+  const jumpToLocation = async location => {
+    try {
+      await Word.run(async context => {
+        if (location.search_text) {
+          const found = context.document.body.search(location.search_text, { matchCase: false, matchWholeWord: false });
+          found.load('items');
+          await context.sync();
+          if (found.items.length > 0) {
+            found.items[0].select('Select');
+            await context.sync();
+            return;
+          }
+        }
+        if (location.block_index != null) {
+          const paragraphs = context.document.body.paragraphs;
+          paragraphs.load('items');
+          await context.sync();
+          const target = paragraphs.items[location.block_index];
+          if (target) {
+            target.select('Select');
+            await context.sync();
+          }
+        }
+      });
+    } catch (err) {
+      setStatus('移動に失敗しました: ' + (err.message || String(err)), true);
+    }
+  };
+
+  let _lastDiagnostics = [];
+
   const render = data => {
+    _lastDiagnostics = data.diagnostic_views || [];
     const counts = data.summary || { error: 0, warning: 0, info: 0 };
     summary.innerHTML = `
       <span class="pill error">Error ${counts.error ?? 0}</span>
@@ -91,6 +128,14 @@
       renderUnits(data.unit_checks || []),
     ].join('');
   };
+
+  results.addEventListener('click', e => {
+    const btn = e.target.closest('.jump-btn');
+    if (!btn) return;
+    const idx = Number(btn.dataset.diagIdx);
+    const item = _lastDiagnostics[idx];
+    if (item?.location_data) jumpToLocation(item.location_data);
+  });
 
   const checkApi = async () => {
     setBusy(true);

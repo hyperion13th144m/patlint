@@ -35,4 +35,5 @@ th, td { border: 1px solid var(--border); padding: 6px; text-align: left; vertic
 th { background: #f3f4f6; }
 .empty { border: 1px dashed var(--border); border-radius: 6px; padding: 18px; color: var(--muted); background: var(--panel); }
 .meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.jump-btn { min-height: 24px; padding: 0 7px; font-size: 12px; margin-top: 4px; }
 .reference-output { white-space: pre-wrap; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 8px; line-height: 1.8; }
