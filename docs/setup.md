@@ -98,7 +98,7 @@ patlint-api.exe --no-open
 #### SSL経由でAPIサーバーを起動する
 APIサーバーは HTTPだけをサポートしています。
 IIS を SSL+リバースプロキシーにして APIを提供することができる。
-[IIS設定](./docs/iis.md)参照
+[IIS設定](./iis.md)参照
 Javascript版Wordアドインを利用する場合は、この設定が必要。
 
 ## Word アドイン
