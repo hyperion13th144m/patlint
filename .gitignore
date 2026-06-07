@@ -8,3 +8,7 @@ dist
 *.egg-info
 .vs/
 obj/
+bin/
+*.user
+*.suo
+*.cache
