@@ -17,10 +17,13 @@
 > テンプレートが自動生成したコードで置き換えてください。
 
 ## インストール（開発時サイドロード）
+Visual Studio のデバッグ実行
+
+または↓
 
 ```powershell
 # 管理者権限の PowerShell で実行
-$path = (Resolve-Path ".\bin\Debug\PatlintAddin.dll").Path
+$path = (Resolve-Path ".\bin\Debug\PatlintAddin.vsto").Path + "|vstolocal"
 $regKey = "HKCU:\Software\Microsoft\Office\Word\Addins\PatlintAddin"
 New-Item -Path $regKey -Force | Out-Null
 Set-ItemProperty -Path $regKey -Name "Description" -Value "PatLint Word Addin"
