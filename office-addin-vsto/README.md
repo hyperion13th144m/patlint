@@ -39,6 +39,15 @@ Word を再起動するとタスクウィンドウが表示されます。
 Visual Studio の **プロジェクト → 発行** から ClickOnce 発行ウィザードを使用します。
 発行先として既存の IIS サーバー（`docs/iis.md` 参照）を利用できます。
 
+## Word VSTO
+VS Community 2022 でビルドする。
+- PatlintAddin プロジェクトのプロパティ
+- 公開
+- 今すぐ公開
+
+.\publish のsetup.exe等を配布する。
+Github Release にアップロードする。
+
 ## 機能
 
 | 機能 | 説明 |
