@@ -95,7 +95,25 @@ http://127.0.0.1:8000/ui
 patlint-api.exe --no-open
 ```
 
-### マニフェスト設置
+#### SSL経由でAPIサーバーを起動する
+APIサーバーは HTTPだけをサポートしています。
+IIS を SSL+リバースプロキシーにして APIを提供することができる。
+[IIS設定](./docs/iis.md)参照
+Javascript版Wordアドインを利用する場合は、この設定が必要。
+
+## Word アドイン
+WordアドインごしにAPIサーバを利用できます。
+Wordアドインは2種類、Javascript版、VSTO版があります。
+Javascript 版は、
+- Microsoft365管理センターでマニフェストを設置する
+- 共有フォルダなどにマニフェストを設置する
+の何れかで使用できます。
+
+後者はWordの起動のたびに設定が必要なのであまり使い勝手は良くない。
+いずれの版でも、APIサーバのURLを設定してください。
+
+### Javascript 版
+#### マニフェスト設置
 
 Word アドインを使う場合は、zip に含まれる `manifest.xml` を Word に sideload します。Windows 版 Word では、manifest を置いたフォルダを共有フォルダー カタログとして登録します。
 
@@ -111,7 +129,7 @@ C:\PatLintAddin\manifest.xml
 \\YOUR-PC-NAME\PatLintAddin
 ```
 
-### Word Add-in 設定方法
+#### Word Add-in 設定方法
 
 1. `patlint-api.exe` を起動します。
 2. Word を開きます。
@@ -124,5 +142,10 @@ C:\PatLintAddin\manifest.xml
 9. `共有フォルダー` から `PatLint` を選択します。
 
 アドインは Word 文書全体のプレーンテキストを取得し、ローカルの PatLint API (`http://127.0.0.1:8000/api/check-text`) に送信します。
+
+### VSTO 版
+VSTOをダウンロード、ZIP内のsetup.exeを起動してVSTO版 アドインをインストールする。
+Wordを起動すると、アドインが利用可能になる。
+
 
 IIS で HTTPS 終端して LAN 内から利用する構成は [IIS で HTTPS 終端する構成](iis.md) を参照してください。
