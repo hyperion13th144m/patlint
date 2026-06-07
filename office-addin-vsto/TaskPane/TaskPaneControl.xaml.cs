@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Media;
 using PatlintAddin.Models;
 using PatlintAddin.Properties;
@@ -13,12 +12,16 @@ namespace PatlintAddin.TaskPane;
 
 public partial class TaskPaneControl : UserControl
 {
-    private readonly ApiClient _api = new();
-    private List<DiagnosticView> _lastDiagnostics = new();
+    private readonly ApiClient _api = new ApiClient();
+    private List<DiagnosticView> _lastDiagnostics = new List<DiagnosticView>();
 
-    public TaskPaneControl()
+    // Word.Application は ThisAddIn からコンストラクタで渡す
+    private readonly Word.Application _wordApp;
+
+    public TaskPaneControl(Word.Application wordApp)
     {
         InitializeComponent();
+        _wordApp = wordApp;
         _api.BaseUrl = Settings.Default.ApiUrl;
         ApiUrlBox.Text = _api.BaseUrl;
     }
@@ -68,8 +71,7 @@ public partial class TaskPaneControl : UserControl
         SetStatus("文書を読み取っています...");
         try
         {
-            var app = Globals.ThisAddIn.Application;
-            var doc = app.ActiveDocument;
+            var doc = _wordApp.ActiveDocument;
             if (doc == null) throw new InvalidOperationException("アクティブな文書がありません。");
 
             string text = doc.Content.Text;
@@ -106,23 +108,27 @@ public partial class TaskPaneControl : UserControl
     private void RenderSummary(SummaryCount counts)
     {
         SummaryPanel.Children.Clear();
-        SummaryPanel.Children.Add(MakePill($"Error {counts.Error}",   "#b91c1c", "#fef2f2", "#fecaca"));
+        SummaryPanel.Children.Add(MakePill($"Error {counts.Error}",     "#b91c1c", "#fef2f2", "#fecaca"));
         SummaryPanel.Children.Add(MakePill($"Warning {counts.Warning}", "#a16207", "#fffbeb", "#fde68a"));
-        SummaryPanel.Children.Add(MakePill($"Info {counts.Info}",     "#1d4ed8", "#eff6ff", "#bfdbfe"));
+        SummaryPanel.Children.Add(MakePill($"Info {counts.Info}",       "#1d4ed8", "#eff6ff", "#bfdbfe"));
     }
 
     private Border MakePill(string text, string fg, string bg, string border)
     {
-        var tb = new TextBlock { Text = text, Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fg)) };
+        var tb = new TextBlock
+        {
+            Text = text,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fg)),
+        };
         return new Border
         {
             Child = tb,
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bg)),
+            Background  = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bg)),
             BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(border)),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(999),
             Padding = new Thickness(8, 3, 8, 3),
-            Margin = new Thickness(0, 0, 6, 0),
+            Margin  = new Thickness(0, 0, 6, 0),
         };
     }
 
@@ -140,7 +146,6 @@ public partial class TaskPaneControl : UserControl
 
             AddCell(grid, item.SeverityLabel, row, 0);
 
-            // Content cell: message + meta + jump button
             var stack = new StackPanel();
             stack.Children.Add(new TextBlock { Text = item.Message, TextWrapping = TextWrapping.Wrap });
             stack.Children.Add(new TextBlock
@@ -154,7 +159,7 @@ public partial class TaskPaneControl : UserControl
 
             if (item.LocationData is { } loc && (loc.SearchText != null || loc.BlockIndex != null))
             {
-                var idx = row - 1; // capture for closure
+                var capturedIdx = row - 1;
                 var btn = new Button
                 {
                     Content = "移動",
@@ -162,13 +167,19 @@ public partial class TaskPaneControl : UserControl
                     Padding = new Thickness(6, 2, 6, 2),
                     Margin = new Thickness(0, 4, 0, 0),
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Tag = idx,
+                    Tag = capturedIdx,
                 };
                 btn.Click += JumpBtn_Click;
                 stack.Children.Add(btn);
             }
 
-            var cell = new Border { Child = stack, Padding = new Thickness(6), BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0, 0, 0, 1) };
+            var cell = new Border
+            {
+                Child = stack,
+                Padding = new Thickness(6),
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1),
+            };
             Grid.SetRow(cell, row);
             Grid.SetColumn(cell, 1);
             grid.Children.Add(cell);
@@ -183,8 +194,7 @@ public partial class TaskPaneControl : UserControl
         {
             var loc = _lastDiagnostics[idx].LocationData;
             if (loc == null) return;
-            var app = Globals.ThisAddIn.Application;
-            bool ok = WordJumpService.JumpTo(app, loc);
+            bool ok = WordJumpService.JumpTo(_wordApp, loc);
             if (!ok) SetStatus("該当箇所が見つかりませんでした。", isError: true);
         }
     }
@@ -195,11 +205,13 @@ public partial class TaskPaneControl : UserControl
         foreach (var c in claims)
             foreach (var r in c.ReferencedClaims)
             {
-                if (!incoming.TryGetValue(r, out var list)) incoming[r] = list = new();
+                if (!incoming.TryGetValue(r, out var list)) incoming[r] = list = new List<int>();
                 list.Add(c.Number);
             }
 
-        var grid = MakeSectionGrid(new[] { "請求項", "従属先", "被従属", "種別" }, new[] { double.NaN, double.NaN, double.NaN, double.NaN });
+        var grid = MakeSectionGrid(
+            new[] { "請求項", "従属先", "被従属", "種別" },
+            new[] { double.NaN, double.NaN, double.NaN, double.NaN });
         int row = 1;
         foreach (var c in claims)
         {
@@ -219,14 +231,16 @@ public partial class TaskPaneControl : UserControl
     private UIElement BuildReferenceSignsSection(List<ReferenceSignEntry> entries)
     {
         var summary = string.Join("，", entries.ConvertAll(e => $"{e.Sign}…{e.Term}"));
-        var grid = MakeSectionGrid(new[] { "符号", "語句", "出現場所" }, new[] { double.NaN, double.NaN, double.NaN });
+        var grid = MakeSectionGrid(
+            new[] { "符号", "語句", "出現場所" },
+            new[] { double.NaN, double.NaN, double.NaN });
         int row = 1;
-        foreach (var e in entries)
+        foreach (var entry in entries)
         {
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            AddCell(grid, e.Sign, row, 0);
-            AddCell(grid, e.Term, row, 1);
-            AddCell(grid, e.Source, row, 2);
+            AddCell(grid, entry.Sign,   row, 0);
+            AddCell(grid, entry.Term,   row, 1);
+            AddCell(grid, entry.Source, row, 2);
             row++;
         }
         var stack = new StackPanel();
@@ -257,7 +271,7 @@ public partial class TaskPaneControl : UserControl
         {
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             AddCell(grid, u.Matched, row, 0);
-            AddCell(grid, u.Unit, row, 1);
+            AddCell(grid, u.Unit,    row, 1);
             AddCell(grid, u.Message, row, 2);
             row++;
         }
@@ -274,7 +288,9 @@ public partial class TaskPaneControl : UserControl
         for (int i = 0; i < widths.Length; i++)
             grid.ColumnDefinitions.Add(new ColumnDefinition
             {
-                Width = double.IsNaN(widths[i]) ? new GridLength(1, GridUnitType.Star) : new GridLength(widths[i]),
+                Width = double.IsNaN(widths[i])
+                    ? new GridLength(1, GridUnitType.Star)
+                    : new GridLength(widths[i]),
             });
 
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -312,15 +328,25 @@ public partial class TaskPaneControl : UserControl
     private static UIElement MakeSection(string title, UIElement content, bool empty)
     {
         var stack = new StackPanel { Margin = new Thickness(0, 18, 0, 0) };
-        stack.Children.Add(new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) });
+        stack.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 8),
+        });
         if (empty)
         {
             stack.Children.Add(new Border
             {
-                Child = new TextBlock { Text = "No data.", Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center },
+                Child = new TextBlock
+                {
+                    Text = "No data.",
+                    Foreground = Brushes.Gray,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                },
                 BorderBrush = Brushes.LightGray,
                 BorderThickness = new Thickness(1),
-                BorderDashArray = new DoubleCollection(new[] { 4.0, 2.0 }),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(16),
                 Background = new SolidColorBrush(Color.FromRgb(249, 250, 251)),

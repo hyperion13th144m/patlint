@@ -10,26 +10,18 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
 
-  <!-- Office PIA / VSTO assemblies — installed by Visual Studio "Office/SharePoint development" workload -->
   <ItemGroup>
-    <Reference Include="Microsoft.Office.Interop.Word">
-      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office16\Microsoft.Office.Interop.Word.dll</HintPath>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="office">
-      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office16\office.dll</HintPath>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </Reference>
-    <!-- VSTO runtime assemblies — located under the VSTO runtime install directory -->
-    <Reference Include="Microsoft.Office.Tools.Word.v4.0.Utilities">
-      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.Word.v4.0.Utilities.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities">
-      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.Common.v4.0.Utilities.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Office.Tools">
-      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.dll</HintPath>
-    </Reference>
+    <!-- Office PIAs are registered in the GAC after installing Office/VS Office workload -->
+    <Reference Include="Microsoft.Office.Interop.Word" />
+    <Reference Include="office" />
+    <!-- VSTO runtime — registered in GAC by VSTO runtime installer -->
+    <Reference Include="Microsoft.Office.Tools.Word.v4.0.Utilities" />
+    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities" />
+    <Reference Include="Microsoft.Office.Tools" />
+    <!-- .NET Framework assemblies not auto-referenced by SDK-style projects -->
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>

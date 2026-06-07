@@ -1,6 +1,5 @@
 using System;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -10,7 +9,7 @@ namespace PatlintAddin.Services;
 
 public class ApiClient : IDisposable
 {
-    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(60) };
+    private readonly HttpClient _http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
 
     public string BaseUrl { get; set; } = "http://localhost:8000";
 
@@ -29,8 +28,8 @@ public class ApiClient : IDisposable
         var content = new StringContent(payload, Encoding.UTF8, "application/json");
         var resp = await _http.PostAsync($"{BaseUrl}/api/check-text", content);
         resp.EnsureSuccessStatusCode();
-        var result = await resp.Content.ReadFromJsonAsync<CheckResponse>();
-        return result ?? new CheckResponse();
+        var json = await resp.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<CheckResponse>(json) ?? new CheckResponse();
     }
 
     public void Dispose() => _http.Dispose();
