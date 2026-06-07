@@ -10,7 +10,7 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
 
-  <!-- Office / VSTO references (installed with Visual Studio Office tools) -->
+  <!-- Office PIA / VSTO assemblies — installed by Visual Studio "Office/SharePoint development" workload -->
   <ItemGroup>
     <Reference Include="Microsoft.Office.Interop.Word">
       <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office16\Microsoft.Office.Interop.Word.dll</HintPath>
@@ -20,10 +20,19 @@
       <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office16\office.dll</HintPath>
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </Reference>
+    <!-- VSTO runtime assemblies — located under the VSTO runtime install directory -->
+    <Reference Include="Microsoft.Office.Tools.Word.v4.0.Utilities">
+      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.Word.v4.0.Utilities.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities">
+      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.Common.v4.0.Utilities.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools">
+      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\VSTOEE\Microsoft.Office.Tools.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Office.Tools.Word.v4.0.Utilities" Version="10.0.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 

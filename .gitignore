@@ -6,3 +6,5 @@ words/custom-terms.txt
 build
 dist
 *.egg-info
+.vs/
+obj/
