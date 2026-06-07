@@ -12,5 +12,7 @@ bin/
 *.user
 *.suo
 *.cache
+*.pfx
+*.snk
 office-addin-vsto/packages/
 office-addin-vsto/PatlintAddin/publish/

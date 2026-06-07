@@ -126,3 +126,62 @@ C:\PatLintAddin\manifest.xml
 アドインは Word 文書全体のプレーンテキストを取得し、ローカルの PatLint API (`http://127.0.0.1:8000/api/check-text`) に送信します。
 
 IIS で HTTPS 終端して LAN 内から利用する構成は [IIS で HTTPS 終端する構成](iis.md) を参照してください。
+
+## VSTO 版 Word アドイン
+
+JavaScript サイドロード版と同等の機能を持つ VSTO 版アドインです。
+診断結果の各項目に「移動」ボタンがあり、クリックすると Word 文書内の該当箇所にジャンプします。
+
+### 必要環境
+
+- Windows
+- Microsoft Word 2016 以降
+- .NET Framework 4.7 以上（Word と同じ PC にインストール済みであることが多い）
+- Visual Studio 2019/2022（**Office/SharePoint 開発**ワークロード）※ビルドする場合のみ
+
+### ビルド方法
+
+リポジトリを取得し、Visual Studio でソリューションを開いてビルドします。
+
+```bash
+git clone https://github.com/hyperion13th144m/patlint.git
+```
+
+Visual Studio で `office-addin-vsto/PatlintAddin/PatlintAddin.sln` を開き、**ビルド → ソリューションのビルド** を実行します。
+
+> **注意**: リポジトリには署名用の `.pfx` ファイルは含まれていません。
+> 初回ビルド時に Visual Studio が自動で一時キー (`PatlintAddin_TemporaryKey.pfx`) を生成します。
+
+### インストール方法（ビルド後）
+
+#### 開発PC（自分でビルドした場合）
+
+`bin/Debug/PatlintAddin.vsto` をダブルクリックするとインストールされます。
+
+#### 別のPCに配布する場合
+
+1. **証明書のエクスポート**  
+   Visual Studio → プロジェクトのプロパティ → **署名** タブで、`PatlintAddin_TemporaryKey.pfx` を確認します。このファイルを配布先PCに渡します（git には含めないこと）。
+
+2. **配布先PCで証明書をインポート**（管理者 PowerShell）
+
+   ```powershell
+   $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2("PatlintAddin_TemporaryKey.pfx")
+
+   $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
+   $store.Open("ReadWrite"); $store.Add($cert); $store.Close()
+
+   $store2 = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher","LocalMachine")
+   $store2.Open("ReadWrite"); $store2.Add($cert); $store2.Close()
+   ```
+
+3. `PatlintAddin.vsto` をダブルクリックしてインストールします。
+
+### 使い方
+
+1. `patlint-api.exe`（または `uv run patlint-api`）で API サーバを起動します。
+2. Word を起動すると、リボンの **ホーム** タブに **PatLint** グループが表示されます。
+3. **PatLint** ボタンをクリックするとタスクパネルが開きます。
+4. **API URL** 欄にサーバのアドレスを入力し、**保存** をクリックします（次回以降は自動で読み込まれます）。
+5. **文書をチェック** ボタンをクリックすると解析が実行されます。
+6. 診断結果の **移動** ボタンをクリックすると、文書内の該当箇所にジャンプします。
