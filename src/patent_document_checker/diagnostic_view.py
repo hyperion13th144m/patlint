@@ -59,10 +59,21 @@ def diagnostic_to_view(diagnostic: Diagnostic) -> dict:
     }
 
 
+_AI_PREFIX_LABELS = {
+    "AI_CLAIM_": "AI（請求項）",
+    "AI_PARA_": "AI（段落）",
+    "AI_OVERVIEW_": "AI（全体）",
+}
+
+
 def rule_label(rule_id: str) -> str:
     if rule_id.startswith("RECOMMENDED_WORDING_"):
         category = rule_id.removeprefix("RECOMMENDED_WORDING_").lower()
         return f"推奨されない語句（{category}）"
+    for prefix, label in _AI_PREFIX_LABELS.items():
+        if rule_id.startswith(prefix):
+            category = rule_id[len(prefix):].lower().replace("_", " ")
+            return f"{label} {category}"
     return RULE_LABELS.get(rule_id, rule_id)
 
 

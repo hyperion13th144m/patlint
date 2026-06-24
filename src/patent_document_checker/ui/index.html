@@ -23,6 +23,7 @@
       --error: #b91c1c;
       --warning: #a16207;
       --info: #1d4ed8;
+      --ai: #6d28d9;
     }
     * { box-sizing: border-box; }
     body { margin: 0; color: var(--text); background: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -37,6 +38,8 @@
     label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 6px; }
     textarea { width: 100%; min-height: 260px; resize: vertical; border: 1px solid var(--border); border-radius: 6px; padding: 10px; font: 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; background: #fff; }
     input[type="file"] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: #fff; }
+    input[type="text"] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; background: #fff; }
+    select { width: 100%; min-height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: #fff; font-size: 13px; }
     button { min-height: 36px; border: 1px solid var(--accent); border-radius: 6px; padding: 0 14px; color: #fff; background: var(--accent); font-weight: 600; cursor: pointer; }
     button.secondary { color: var(--text); border-color: var(--border); background: #fff; }
     button:disabled { opacity: .55; cursor: wait; }
@@ -51,6 +54,7 @@
     .pill.error { color: var(--error); border-color: #fecaca; background: #fef2f2; }
     .pill.warning { color: var(--warning); border-color: #fde68a; background: #fffbeb; }
     .pill.info { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
+    .pill.ai { color: var(--ai); border-color: #ddd6fe; background: #f5f3ff; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
     th, td { border: 1px solid var(--border); padding: 8px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
     th { background: #f3f4f6; position: sticky; top: 0; }
@@ -62,16 +66,38 @@
     .severity-error .severity-badge { color: #991b1b; background: #fee2e2; }
     .severity-warning .severity-badge { color: #92400e; background: #fef3c7; }
     .severity-info .severity-badge { color: #1e40af; background: #dbeafe; }
+    .ai-badge { display: inline-block; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 700; color: var(--ai); background: #f5f3ff; border: 1px solid #ddd6fe; vertical-align: middle; margin-right: 4px; }
     .result-section { margin-top: 26px; }
     .result-section:first-child { margin-top: 0; }
     .result-section h2 { font-size: 18px; margin: 0 0 10px; }
     .reference-output { white-space: pre-wrap; word-break: break-word; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 12px; line-height: 1.9; margin: 10px 0 12px; }
     .reference-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
     .reference-controls label { margin: 0; }
-    .reference-controls select { min-height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: #fff; }
+    .reference-controls select { min-height: 34px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: #fff; width: auto; }
     .reference-controls .check { display: flex; align-items: center; gap: 6px; min-height: 34px; }
     .status { min-height: 20px; margin-top: 10px; }
     .error-text { color: var(--error); }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .ai-panel { margin-top: 4px; }
+    .ai-panel-title { font-size: 13px; font-weight: 700; color: var(--ai); margin: 0 0 4px; }
+    .check-row { display: flex; align-items: center; gap: 6px; min-height: 34px; font-size: 13px; font-weight: 600; }
+    .ai-status { min-height: 20px; margin-top: 8px; font-size: 13px; }
+    #token-log { margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .token-entry { padding: 4px 0; border-top: 1px solid var(--border); }
+    .token-entry:first-child { border-top: none; }
+    .token-label { font-weight: 600; margin-bottom: 2px; }
+    .grouped-table th:nth-child(1) { width: 120px; }
+    .grouped-table td.location-cell { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; vertical-align: top; }
+    .grouped-table td.issues-cell { vertical-align: top; }
+    .issue-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: flex-start; }
+    .issue-item:last-child { margin-bottom: 0; }
+    .issue-dot { flex-shrink: 0; margin-top: 3px; }
+    .issue-dot.error { color: var(--error); }
+    .issue-dot.warning { color: var(--warning); }
+    .issue-dot.info { color: var(--info); }
+    .issue-body { flex: 1; }
+    .issue-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
+    .issue-message { font-size: 13px; }
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--border); }
@@ -111,6 +137,48 @@
       </form>
 
       <div class="status muted" id="status"></div>
+
+      <!-- AI review panel: shown after successful upload -->
+      <div id="ai-panel" class="ai-panel hidden">
+        <hr class="divider">
+        <p class="ai-panel-title">AIレビュー</p>
+
+        <label for="ai-review-type">レビュー種別</label>
+        <select id="ai-review-type">
+          <option value="overview">全体レビュー</option>
+          <option value="claim">請求項レビュー</option>
+          <option value="paragraph">段落レビュー</option>
+        </select>
+
+        <div id="claim-numbers-row" class="hidden">
+          <label for="ai-claim-numbers">請求項番号（カンマ区切り、空欄で全請求項）</label>
+          <input type="text" id="ai-claim-numbers" placeholder="例: 1, 2, 3">
+        </div>
+
+        <label for="ai-provider">プロバイダー</label>
+        <select id="ai-provider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="ollama">Ollama（ローカル）</option>
+        </select>
+
+        <div id="ollama-model-row" class="hidden">
+          <label for="ai-ollama-model">Ollama モデル名</label>
+          <input type="text" id="ai-ollama-model" placeholder="例: qwen3:8b" value="qwen3:8b">
+        </div>
+
+        <div class="check-row" style="margin-top: 14px;">
+          <input type="checkbox" id="ai-anonymize" checked>
+          <label for="ai-anonymize" style="margin: 0;">匿名化して送信</label>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="ai-submit">AIレビューを実行</button>
+          <button type="button" id="ai-cancel" class="secondary hidden">キャンセル</button>
+          <button type="button" id="ai-clear" class="secondary hidden">クリア</button>
+        </div>
+        <div class="ai-status muted" id="ai-status"></div>
+        <div id="token-log"></div>
+      </div>
     </aside>
 
     <section>
@@ -120,11 +188,18 @@
   </main>
 
   <script>
-    const state = { result: null };
+    const state = { result: null, documentId: null, aiDone: { overview: false, claim: false, paragraph: false } };
     const $ = selector => document.querySelector(selector);
     const status = $('#status');
     const summary = $('#summary');
     const result = $('#result');
+    const aiPanel = $('#ai-panel');
+    const aiStatus = $('#ai-status');
+    const tokenLog = $('#token-log');
+
+    // -----------------------------------------------------------------------
+    // Mode switching
+    // -----------------------------------------------------------------------
 
     const setMode = mode => {
       $('#text-tab').classList.toggle('active', mode === 'text');
@@ -135,9 +210,27 @@
     };
 
     const setBusy = busy => {
-      document.querySelectorAll('button').forEach(button => button.disabled = busy);
+      document.querySelectorAll('aside button').forEach(button => button.disabled = busy);
       if (busy) status.textContent = '解析中...';
     };
+
+    let _aiAbortController = null;
+
+    const setAiBusy = busy => {
+      $('#ai-submit').disabled = busy;
+      $('#ai-cancel').classList.toggle('hidden', !busy);
+    };
+
+    $('#ai-cancel').addEventListener('click', () => {
+      if (_aiAbortController) {
+        _aiAbortController.abort();
+        _aiAbortController = null;
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Utility
+    // -----------------------------------------------------------------------
 
     const escapeHtml = value => String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -146,18 +239,41 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
+    const showError = message => {
+      status.innerHTML = `<span class="error-text">${escapeHtml(message)}</span>`;
+    };
+
+    const showAiError = message => {
+      aiStatus.innerHTML = `<span class="error-text">${escapeHtml(message)}</span>`;
+    };
+
+    // -----------------------------------------------------------------------
+    // Render
+    // -----------------------------------------------------------------------
+
     const render = data => {
       state.result = data;
       const counts = data.summary || { error: 0, warning: 0, info: 0 };
+      const aiCount = (data.diagnostic_views || []).filter(d => d.rule_id.startsWith('AI_')).length;
       summary.innerHTML = `
         <span class="pill error">Error ${counts.error ?? 0}</span>
         <span class="pill warning">Warning ${counts.warning ?? 0}</span>
         <span class="pill info">Info ${counts.info ?? 0}</span>
+        ${aiCount > 0 ? `<span class="pill ai">AI ${aiCount}</span>` : ''}
         <span class="pill">Source ${escapeHtml(data.source || '')}</span>
       `;
       result.className = '';
+      const allViews = data.diagnostic_views || [];
+      const blocks = data.blocks || [];
+      const ruleViews    = allViews.filter(d => !d.rule_id.startsWith('AI_'));
+      const overviewViews = allViews.filter(d => d.rule_id.startsWith('AI_OVERVIEW'));
+      const claimViews   = allViews.filter(d => d.rule_id.startsWith('AI_CLAIM'));
+      const paraViews    = allViews.filter(d => d.rule_id.startsWith('AI_PARA'));
       result.innerHTML = [
-        renderDiagnostics(data.diagnostic_views || []),
+        renderGroupedDiagnostics('診断結果（ルールベース）', ruleViews, blocks),
+        renderGroupedDiagnostics('診断結果（全体AIレビュー）', overviewViews, blocks),
+        renderGroupedDiagnostics('診断結果（請求項AIレビュー）', claimViews, blocks),
+        renderGroupedDiagnostics('診断結果（明細書AIレビュー）', paraViews, blocks),
         renderClaimRelationships(data.claims || []),
         renderReferenceSigns(data.reference_sign_entries || []),
         renderTermOccurrences(data.term_occurrences || {}),
@@ -173,6 +289,113 @@
       </div>
     `;
 
+    // -----------------------------------------------------------------------
+    // Grouped diagnostics (by location block)
+    // -----------------------------------------------------------------------
+
+    // 【...】 ヘッダーを抽出する
+    const extractHeader = text => {
+      const m = String(text).match(/^(【[^】]*】)/);
+      return m ? m[1] : null;
+    };
+
+    const SEVERITY_ORDER = { error: 0, warning: 1, info: 2 };
+    const SEVERITY_DOT = { error: '●', warning: '▲', info: '◆' };
+
+    const renderGroupedDiagnostics = (title, diagnostics, blocks) => {
+      if (!diagnostics.length) return '';
+
+      // blockIndex -> block オブジェクトのマップ
+      const blockMap = new Map(blocks.map(b => [b.index, b]));
+
+      // search_text から 【...】 を取り出して block を探す補助関数
+      const findBlockBySearchText = searchText => {
+        if (!searchText) return null;
+        const header = extractHeader(searchText) || searchText;
+        for (const b of blocks) {
+          if (b.text.startsWith(header)) return b;
+        }
+        return null;
+      };
+
+      // 各 diagnostic にブロックを紐付け
+      const withBlock = diagnostics.map(d => {
+        const loc = d.location_data || {};
+        let block = null;
+        if (loc.block_index != null) block = blockMap.get(loc.block_index) || null;
+        if (!block && loc.search_text) block = findBlockBySearchText(loc.search_text);
+        return { d, block };
+      });
+
+      // block_index でグループ化（null は最後に）
+      const groups = new Map(); // key: block_index or '__unknown__'
+      for (const { d, block } of withBlock) {
+        const key = block != null ? block.index : '__unknown__';
+        if (!groups.has(key)) groups.set(key, { block, items: [] });
+        groups.get(key).items.push(d);
+      }
+
+      // ブロック順にソート（unknown は末尾）
+      const sorted = [...groups.entries()].sort(([ka], [kb]) => {
+        if (ka === '__unknown__') return 1;
+        if (kb === '__unknown__') return -1;
+        return Number(ka) - Number(kb);
+      });
+
+      // 【...】ヘッダーがないブロックは除外（書類名など）
+      const rows = sorted.filter(([, { block }]) => {
+        if (!block) return true; // unknown はまとめて表示
+        return !!extractHeader(block.text);
+      });
+
+      if (!rows.length) return '';
+
+      const rowsHtml = rows.map(([key, { block, items }]) => {
+        // ブロックが見つからない場合でも search_text に【...】があれば見出しに使う
+        let header;
+        if (block) {
+          header = extractHeader(block.text) || '（位置不明）';
+        } else if (items[0]?.location_data?.search_text) {
+          header = items[0].location_data.search_text;
+        } else {
+          header = '（位置不明）';
+        }
+
+        // severity 順にソート
+        const sortedItems = [...items].sort((a, b) =>
+          (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9)
+        );
+
+        const issuesHtml = sortedItems.map(d => `
+          <div class="issue-item">
+            <span class="issue-dot ${escapeHtml(d.severity)}">${SEVERITY_DOT[d.severity] || '・'}</span>
+            <div class="issue-body">
+              <div class="issue-label">${isAiRule(d.rule_id) ? '<span class="ai-badge">AI</span>' : ''}${escapeHtml(d.rule_label)}</div>
+              <div class="issue-message">${escapeHtml(d.message)}</div>
+            </div>
+          </div>
+        `).join('');
+
+        return `
+          <tr>
+            <td class="location-cell">${escapeHtml(header)}</td>
+            <td class="issues-cell">${issuesHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return section(title, `
+        <table class="grouped-table">
+          <thead>
+            <tr><th>指摘箇所</th><th>指摘事項</th></tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `);
+    };
+
+    const isAiRule = ruleId => String(ruleId).startsWith('AI_');
+
     const renderDiagnostics = diagnostics => {
       if (!diagnostics.length) return section('診断結果', '<div class="empty">No diagnostics.</div>');
       return section('診断結果', `
@@ -184,7 +407,7 @@
             ${diagnostics.map(diagnostic => `
               <tr class="severity-${escapeHtml(diagnostic.severity)}">
                 <td><span class="severity-badge">${escapeHtml(diagnostic.severity_label)}</span></td>
-                <td>${escapeHtml(diagnostic.rule_label)}</td>
+                <td>${isAiRule(diagnostic.rule_id) ? '<span class="ai-badge">AI</span>' : ''}${escapeHtml(diagnostic.rule_label)}</td>
                 <td>
                   <div>${escapeHtml(diagnostic.message)}</div>
                   <div class="diagnostic-meta">${escapeHtml(diagnostic.rule_id)} / ${escapeHtml(diagnostic.location)}</div>
@@ -320,13 +543,13 @@
     const normalizeSign = value => String(value)
       .replace(/[Ａ-Ｚａ-ｚ０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0))
       .replace(/[－ー―‐]/g, '-')
-      .replace(/[’＇]/g, "'")
+      .replace(/['＇]/g, "'")
       .replace(/[　\s]+/g, '')
       .toUpperCase();
     const toFullWidth = value => String(value)
       .replace(/[A-Za-z0-9]/g, char => String.fromCharCode(char.charCodeAt(0) + 0xFEE0))
       .replace(/-/g, '－')
-      .replace(/'/g, '’');
+      .replace(/'/g, '‘');
     const toHalfWidth = value => normalizeSign(value).replace(/'/g, "'");
     const signRank = sign => {
       const normalized = normalizeSign(sign);
@@ -373,12 +596,17 @@
       renderReferenceOutput();
     };
 
-    const showError = message => {
-      status.innerHTML = `<span class="error-text">${escapeHtml(message)}</span>`;
-    };
+    // -----------------------------------------------------------------------
+    // Upload (rule-based check, stores document_id)
+    // -----------------------------------------------------------------------
 
-    const requestJson = async (url, options) => {
+    const uploadDocument = async (url, options) => {
       setBusy(true);
+      status.textContent = '解析中...';
+      aiPanel.classList.add('hidden');
+      tokenLog.innerHTML = '';
+      state.documentId = null;
+      state.aiDone = { overview: false, claim: false, paragraph: false };
       try {
         const response = await fetch(url, options);
         const text = await response.text();
@@ -386,6 +614,11 @@
         if (text) data = JSON.parse(text);
         if (!response.ok) throw new Error(data.detail || response.statusText);
         render(data);
+        if (data.document_id) {
+          state.documentId = data.document_id;
+          aiPanel.classList.remove('hidden');
+          updateAiSubmitState();
+        }
         status.textContent = '解析が完了しました。';
       } catch (error) {
         showError(error.message || String(error));
@@ -397,11 +630,8 @@
     $('#text-form').addEventListener('submit', event => {
       event.preventDefault();
       const text = $('#text-input').value;
-      if (!text.trim()) {
-        showError('テキストを入力してください。');
-        return;
-      }
-      requestJson('/api/check-text', {
+      if (!text.trim()) { showError('テキストを入力してください。'); return; }
+      uploadDocument('/api/documents/upload-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, source: 'ui-text' })
@@ -411,19 +641,210 @@
     $('#docx-form').addEventListener('submit', event => {
       event.preventDefault();
       const file = $('#docx-input').files[0];
-      if (!file) {
-        showError('docx ファイルを選択してください。');
-        return;
-      }
+      if (!file) { showError('docx ファイルを選択してください。'); return; }
       const form = new FormData();
       form.append('file', file);
-      requestJson('/api/check-docx', { method: 'POST', body: form });
+      uploadDocument('/api/documents/upload-docx', { method: 'POST', body: form });
     });
 
+    // -----------------------------------------------------------------------
+    // AI review panel controls
+    // -----------------------------------------------------------------------
+
+    const updateAiPanelVisibility = () => {
+      const type = $('#ai-review-type').value;
+      $('#claim-numbers-row').classList.toggle('hidden', type !== 'claim');
+      const provider = $('#ai-provider').value;
+      $('#ollama-model-row').classList.toggle('hidden', provider !== 'ollama');
+      updateAiSubmitState();
+    };
+
+    const updateAiSubmitState = () => {
+      const type = $('#ai-review-type').value;
+      const done = state.aiDone[type];
+      $('#ai-submit').disabled = !!done;
+      $('#ai-clear').classList.toggle('hidden', !done);
+      if (done) {
+        aiStatus.textContent = 'レビュー済みです。クリアして再実行できます。';
+      } else if (!aiStatus.textContent.includes('実行中') && !aiStatus.textContent.includes('エラー')) {
+        aiStatus.textContent = '';
+      }
+    };
+
+    const aiPrefixMap = { overview: 'AI_OVERVIEW', claim: 'AI_CLAIM', paragraph: 'AI_PARA' };
+
+    $('#ai-clear').addEventListener('click', () => {
+      const type = $('#ai-review-type').value;
+      state.aiDone[type] = false;
+      const clearPrefix = aiPrefixMap[type];
+      if (state.result) {
+        state.result.diagnostic_views = (state.result.diagnostic_views || [])
+          .filter(d => !d.rule_id.startsWith(clearPrefix));
+        render(state.result);
+      }
+      aiStatus.textContent = '';
+      updateAiSubmitState();
+    });
+
+    $('#ai-review-type').addEventListener('change', updateAiPanelVisibility);
+    $('#ai-provider').addEventListener('change', updateAiPanelVisibility);
+
+    // -----------------------------------------------------------------------
+    // AI review execution
+    // -----------------------------------------------------------------------
+
+    // SSE ストリームを読み込むユーティリティ
+    // コールバック: onEvent(eventName, data)
+    const consumeSse = async (response, onEvent, signal) => {
+      const reader = response.body.getReader();
+      if (signal) signal.addEventListener('abort', () => reader.cancel());
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop(); // 最後の未完了チャンクを保持
+        for (const chunk of chunks) {
+          if (!chunk.trim()) continue;
+          let eventName = 'message';
+          let dataStr = '';
+          for (const line of chunk.split('\n')) {
+            if (line.startsWith('event:')) eventName = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataStr = line.slice(5).trim();
+          }
+          if (dataStr) {
+            try { onEvent(eventName, JSON.parse(dataStr)); }
+            catch { /* JSON parse error は無視 */ }
+          }
+        }
+      }
+    };
+
+    $('#ai-submit').addEventListener('click', async () => {
+      if (!state.documentId) { showAiError('先にドキュメントをアップロードしてください。'); return; }
+
+      const type = $('#ai-review-type').value;
+      const provider = $('#ai-provider').value;
+      const anonymize = $('#ai-anonymize').checked;
+      const model = provider === 'ollama' ? ($('#ai-ollama-model').value.trim() || null) : null;
+
+      let endpoint, body;
+      if (type === 'overview') {
+        endpoint = `/api/documents/${state.documentId}/full-overview`;
+        body = { provider, model, anonymize };
+      } else if (type === 'claim') {
+        endpoint = `/api/documents/${state.documentId}/api-review`;
+        const raw = $('#ai-claim-numbers').value.trim();
+        const claimNumbers = raw
+          ? raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
+          : null;
+        body = { provider, model, anonymize, claim_numbers: claimNumbers };
+      } else {
+        endpoint = `/api/documents/${state.documentId}/paragraph-review`;
+        body = { provider, model, anonymize };
+      }
+
+      _aiAbortController = new AbortController();
+      const signal = _aiAbortController.signal;
+
+      setAiBusy(true);
+      aiStatus.textContent = 'AIレビュー実行中...';
+
+      // レビュー開始時に今回実行するタイプの AI 診断だけをクリア（他タイプは保持）
+      const clearPrefix = aiPrefixMap[type];
+      const ruleOnlyViews = state.result
+        ? (state.result.diagnostic_views || []).filter(d => !d.rule_id.startsWith(clearPrefix))
+        : [];
+      const accumulatedAiViews = [];
+
+      const typeLabel = { overview: '全体', claim: '請求項', paragraph: '段落' }[type] || type;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal,
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          let detail = response.statusText;
+          try { detail = JSON.parse(text).detail || detail; } catch { /* ignore */ }
+          throw new Error(detail);
+        }
+
+        let startData = null;
+        await consumeSse(response, (eventName, data) => {
+          if (eventName === 'start') {
+            startData = data;
+          } else if (eventName === 'result') {
+            const newViews = (data.diagnostic_views || []).filter(d => d.rule_id.startsWith('AI_'));
+            accumulatedAiViews.push(...newViews);
+
+            // 結果を逐次反映
+            if (state.result) {
+              state.result.diagnostic_views = [...ruleOnlyViews, ...accumulatedAiViews];
+              render(state.result);
+            }
+
+            const label = data.label || '';
+            const u = data.token_usage;
+            const count = newViews.length;
+            aiStatus.textContent = `${label} 完了（${count} 件）`;
+
+            if (u) {
+              const now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              const entry = document.createElement('div');
+              entry.className = 'token-entry';
+              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} ${escapeHtml(typeLabel)}レビュー ${escapeHtml(label)}</div>`
+                + `入力 ${u.input_tokens.toLocaleString()} / 出力 ${u.output_tokens.toLocaleString()} / 合計 ${u.total_tokens.toLocaleString()} トークン`;
+              tokenLog.appendChild(entry);
+            }
+          } else if (eventName === 'done') {
+            const totalCount = accumulatedAiViews.length;
+            state.aiDone[type] = true;
+            updateAiSubmitState();
+            aiStatus.textContent = `AIレビュー完了（AI指摘 ${totalCount} 件）`;
+
+            const u = data.total_token_usage;
+            if (u) {
+              const now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              const entry = document.createElement('div');
+              entry.className = 'token-entry';
+              entry.style.fontWeight = '600';
+              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} ${escapeHtml(typeLabel)}レビュー 合計</div>`
+                + `入力 ${u.input_tokens.toLocaleString()} / 出力 ${u.output_tokens.toLocaleString()} / 合計 ${u.total_tokens.toLocaleString()} トークン`;
+              tokenLog.appendChild(entry);
+            }
+          } else if (eventName === 'error') {
+            showAiError(data.message || 'AIレビューエラー');
+          }
+        }, signal);
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          aiStatus.textContent = 'キャンセルしました。';
+        } else {
+          showAiError(error.message || String(error));
+        }
+      } finally {
+        _aiAbortController = null;
+        setAiBusy(false);
+        updateAiSubmitState();
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Tab switching
+    // -----------------------------------------------------------------------
     $('#text-tab').addEventListener('click', () => setMode('text'));
     $('#docx-tab').addEventListener('click', () => setMode('docx'));
     $('#clear-text').addEventListener('click', () => { $('#text-input').value = ''; });
 
+    // -----------------------------------------------------------------------
+    // Health check
+    // -----------------------------------------------------------------------
     fetch('/health')
       .then(response => response.json())
       .then(data => { $('#health').textContent = data.status === 'ok' ? 'API ready' : 'API'; })

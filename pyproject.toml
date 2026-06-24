@@ -13,6 +13,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 exe = ["pyinstaller>=6.0"]
+ai = ["anthropic>=0.40", "httpx>=0.27"]
 
 [project.scripts]
 patlint = "patent_document_checker.cli:main"
