@@ -121,7 +121,9 @@
           <Button x:Name="CheckApiBtn" Content="API確認"
                   Style="{StaticResource SecondaryBtn}" Margin="0,0,6,4" Click="CheckApi_Click"/>
           <Button x:Name="CheckDocBtn" Content="文書をチェック"
-                  Style="{StaticResource PrimaryBtn}" Margin="0,0,0,4" Click="CheckDocument_Click"/>
+                  Style="{StaticResource PrimaryBtn}" Margin="0,0,6,4" Click="CheckDocument_Click"/>
+          <Button x:Name="CopyDocBtn" Content="コピー"
+                  Style="{StaticResource SecondaryBtn}" Margin="0,0,0,4" Click="CopyDocument_Click"/>
         </WrapPanel>
 
         <!-- Status -->

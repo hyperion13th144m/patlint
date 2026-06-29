@@ -130,6 +130,22 @@ namespace PatlintAddin.TaskPane
         //  Document check
         // ------------------------------------------------------------------ //
 
+        private void CopyDocument_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var doc = _wordApp.ActiveDocument;
+                if (doc == null) { SetStatus("アクティブな文書がありません。"); return; }
+                string text = doc.Content.Text;
+                System.Windows.Clipboard.SetText(text);
+                SetStatus("文書全体をクリップボードにコピーしました。");
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"コピーに失敗しました: {ex.Message}");
+            }
+        }
+
         private async void CheckDocument_Click(object sender, RoutedEventArgs e)
         {
             SetBusy(true);
