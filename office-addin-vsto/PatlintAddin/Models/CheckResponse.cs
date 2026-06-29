@@ -85,8 +85,8 @@ namespace PatlintAddin.Models
 
     public class UnitCheck
     {
-        [JsonPropertyName("line")]    public string Line    { get; set; } = "";
-        [JsonPropertyName("col")]     public string Col     { get; set; } = "";
+        [JsonPropertyName("line")]    public int    Line    { get; set; }
+        [JsonPropertyName("col")]     public int    Col     { get; set; }
         [JsonPropertyName("matched")] public string Matched { get; set; } = "";
         [JsonPropertyName("number")]  public string Number  { get; set; } = "";
         [JsonPropertyName("unit")]    public string Unit    { get; set; } = "";

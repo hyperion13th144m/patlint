@@ -718,8 +718,8 @@ namespace PatlintAddin.TaskPane
                 foreach (var u in units)
                 {
                     grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                    AddTableCell(grid, u.Line,    row, 0);
-                    AddTableCell(grid, u.Col,     row, 1);
+                    AddTableCell(grid, u.Line.ToString(),    row, 0);
+                    AddTableCell(grid, u.Col.ToString(),     row, 1);
                     AddTableCell(grid, u.Matched, row, 2);
                     AddTableCell(grid, u.Number,  row, 3);
                     AddTableCell(grid, u.Unit,    row, 4);
