@@ -865,63 +865,66 @@ namespace PatlintAddin.TaskPane
 
             try
             {
-                await _api.ProofreadAsync(_documentId, provider, model, anonymize,
-                    (eventName, data) =>
-                    {
-                        Dispatcher.Invoke(() =>
+                await Task.Run(async () =>
+                {
+                    await _api.ProofreadAsync(_documentId, provider, model, anonymize,
+                        async (eventName, data) =>
                         {
-                            if (eventName == "start")
+                            await Dispatcher.InvokeAsync(() =>
                             {
-                                totalBlocks = data.TryGetProperty("total", out var t) ? t.GetInt32() : 0;
-                            }
-                            else if (eventName == "result")
-                            {
-                                processed++;
-                                var item = new ProofreadItem
+                                if (eventName == "start")
                                 {
-                                    Label         = data.TryGetProperty("label",          out var l)  ? l.GetString()  : "",
-                                    HasCorrection = data.TryGetProperty("has_correction", out var hc) ? hc.GetBoolean(): false,
-                                    OriginalText  = data.TryGetProperty("original_text",  out var ot) ? ot.GetString()  : "",
-                                    CorrectedText = data.TryGetProperty("corrected_text", out var ct) && ct.ValueKind != System.Text.Json.JsonValueKind.Null
-                                                    ? ct.GetString() : null,
-                                };
-                                _proofreadItems.Add(item);
-
-                                var isReal = item.HasCorrection && item.CorrectedText != null
-                                             && item.CorrectedText != item.OriginalText;
-                                if (isReal)
-                                {
-                                    item.Displayed = true;
-                                    EnsureProofreadSection();
-                                    AppendProofRow(item);
+                                    totalBlocks = data.TryGetProperty("total", out var t) ? t.GetInt32() : 0;
                                 }
-                                UpdateProofSummary();
+                                else if (eventName == "result")
+                                {
+                                    processed++;
+                                    var item = new ProofreadItem
+                                    {
+                                        Label         = data.TryGetProperty("label",          out var l)  ? l.GetString()  : "",
+                                        HasCorrection = data.TryGetProperty("has_correction", out var hc) ? hc.GetBoolean(): false,
+                                        OriginalText  = data.TryGetProperty("original_text",  out var ot) ? ot.GetString()  : "",
+                                        CorrectedText = data.TryGetProperty("corrected_text", out var ct) && ct.ValueKind != System.Text.Json.JsonValueKind.Null
+                                                        ? ct.GetString() : null,
+                                    };
+                                    _proofreadItems.Add(item);
 
-                                var prog = totalBlocks > 0 ? $" ({processed}/{totalBlocks})" : "";
-                                var correctedSoFar = _proofreadItems.Count(x => x.Displayed);
-                                AiStatusText.Text = $"校正中{prog}… 修正あり {correctedSoFar} 件";
+                                    var isReal = item.HasCorrection && item.CorrectedText != null
+                                                 && item.CorrectedText != item.OriginalText;
+                                    if (isReal)
+                                    {
+                                        item.Displayed = true;
+                                        EnsureProofreadSection();
+                                        AppendProofRow(item);
+                                    }
+                                    UpdateProofSummary();
 
-                                if (data.TryGetProperty("token_usage", out var u) && u.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                    AppendTokenEntry(item.Label, u);
-                            }
-                            else if (eventName == "done")
-                            {
-                                var correctionCount = _proofreadItems.Count(x => x.Displayed);
-                                _proofreadDone = true;
-                                UpdateAiSubmitState();
-                                AiStatusText.Text = $"AI文書校正完了（修正あり {correctionCount} 件）";
+                                    var prog = totalBlocks > 0 ? $" ({processed}/{totalBlocks})" : "";
+                                    var correctedSoFar = _proofreadItems.Count(x => x.Displayed);
+                                    AiStatusText.Text = $"校正中{prog}… 修正あり {correctedSoFar} 件";
 
-                                if (data.TryGetProperty("total_token_usage", out var tu) && tu.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                    AppendTokenEntry("合計", tu, bold: true);
-                            }
-                            else if (eventName == "error")
-                            {
-                                var msg = data.TryGetProperty("message", out var m) ? m.GetString() : "AI校正エラー";
-                                AiStatusText.Text = "エラー: " + msg;
-                            }
-                        });
-                    },
-                    _aiCts.Token);
+                                    if (data.TryGetProperty("token_usage", out var u) && u.ValueKind != System.Text.Json.JsonValueKind.Null)
+                                        AppendTokenEntry(item.Label, u);
+                                }
+                                else if (eventName == "done")
+                                {
+                                    var correctionCount = _proofreadItems.Count(x => x.Displayed);
+                                    _proofreadDone = true;
+                                    UpdateAiSubmitState();
+                                    AiStatusText.Text = $"AI文書校正完了（修正あり {correctionCount} 件）";
+
+                                    if (data.TryGetProperty("total_token_usage", out var tu) && tu.ValueKind != System.Text.Json.JsonValueKind.Null)
+                                        AppendTokenEntry("合計", tu, bold: true);
+                                }
+                                else if (eventName == "error")
+                                {
+                                    var msg = data.TryGetProperty("message", out var m) ? m.GetString() : "AI校正エラー";
+                                    AiStatusText.Text = "エラー: " + msg;
+                                }
+                            });
+                        },
+                        _aiCts.Token);
+                }, _aiCts.Token);
             }
             catch (OperationCanceledException)
             {

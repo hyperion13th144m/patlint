@@ -40,7 +40,7 @@ namespace PatlintAddin.Services
             string provider,
             string model,
             bool anonymize,
-            Action<string, JsonElement> onEvent,
+            Func<string, JsonElement, Task> onEvent,
             CancellationToken ct)
         {
             var payload = JsonSerializer.Serialize(new
@@ -76,7 +76,7 @@ namespace PatlintAddin.Services
                             try
                             {
                                 using (var doc = JsonDocument.Parse(currentData))
-                                    onEvent(currentEvent, doc.RootElement.Clone());
+                                    await onEvent(currentEvent, doc.RootElement.Clone());
                             }
                             catch { /* ignore malformed events */ }
                             currentData  = null;
