@@ -92,6 +92,12 @@ namespace PatlintAddin.TaskPane
             SetStatus("API URLを保存しました。");
         }
 
+        private void OpenUi_Click(object sender, RoutedEventArgs e)
+        {
+            var url = ApiUrlBox.Text.TrimEnd('/') + "/ui";
+            try { System.Diagnostics.Process.Start(url); } catch { }
+        }
+
         private void HelpLink_Click(object sender, RequestNavigateEventArgs e)
         {
             try { System.Diagnostics.Process.Start(_api.BaseUrl.TrimEnd('/') + "/help"); } catch { }

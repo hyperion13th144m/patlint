@@ -105,12 +105,15 @@
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <TextBox x:Name="ApiUrlBox" Grid.Column="0" Padding="6,5"
                    BorderBrush="#d1d5db" BorderThickness="1"
                    TextChanged="ApiUrlBox_TextChanged"/>
           <Button Grid.Column="1" Content="保存" Style="{StaticResource SecondaryBtn}"
                   Margin="6,0,0,0" Click="SaveApiUrl_Click"/>
+          <Button Grid.Column="2" Content="UIを開く" Style="{StaticResource SecondaryBtn}"
+                  Margin="4,0,0,0" Click="OpenUi_Click"/>
         </Grid>
 
         <!-- Action buttons -->
