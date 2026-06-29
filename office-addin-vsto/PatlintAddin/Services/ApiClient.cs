@@ -56,7 +56,11 @@ namespace PatlintAddin.Services
             };
 
             var resp = await _streamHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-            resp.EnsureSuccessStatusCode();
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"応答の状態コードは成功を示していません：{(int)resp.StatusCode}（{resp.ReasonPhrase}）\n{body}");
+            }
 
             using (var stream = await resp.Content.ReadAsStreamAsync())
             using (var reader = new StreamReader(stream))
