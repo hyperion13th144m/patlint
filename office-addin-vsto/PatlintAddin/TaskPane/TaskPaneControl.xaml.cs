@@ -741,6 +741,7 @@ namespace PatlintAddin.TaskPane
 
         private void ProviderCombo_Changed(object sender, SelectionChangedEventArgs e)
         {
+            if (OllamaModelRow == null) return;
             var tag = ((ComboBoxItem)ProviderCombo.SelectedItem)?.Tag as string ?? "anthropic";
             OllamaModelRow.Visibility = tag == "ollama" ? Visibility.Visible : Visibility.Collapsed;
         }
