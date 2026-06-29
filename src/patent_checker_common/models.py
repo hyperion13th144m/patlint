@@ -43,6 +43,8 @@ class Diagnostic:
     message: str
     location: DiagnosticLocation | None = None
     suggestion: str | None = None
+    reason: str | None = None
+    original_text: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)

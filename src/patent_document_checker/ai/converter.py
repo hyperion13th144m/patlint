@@ -132,16 +132,18 @@ def ai_issues_to_diagnostics(
         elif location_str:
             location = DiagnosticLocation(source_type="document")
 
-        reason = issue.get("reason", "")
-        full_message = f"{message}（{reason}）" if reason else message
+        reason = issue.get("reason") or None
+        original_text = issue.get("original_text") or None
 
         diagnostics.append(
             Diagnostic(
                 rule_id=rule_id,
                 severity=severity,
-                message=full_message,
+                message=message,
                 location=location,
                 suggestion=str(suggestion) if suggestion else None,
+                reason=str(reason) if reason else None,
+                original_text=str(original_text) if original_text else None,
             )
         )
 

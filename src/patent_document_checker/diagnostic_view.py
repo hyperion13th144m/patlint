@@ -48,7 +48,7 @@ def diagnostics_to_views(diagnostics: Iterable[Diagnostic]) -> list[dict[str, st
 
 
 def diagnostic_to_view(diagnostic: Diagnostic) -> dict:
-    return {
+    view: dict = {
         "severity": diagnostic.severity,
         "severity_label": SEVERITY_LABELS.get(diagnostic.severity, diagnostic.severity.upper()),
         "rule_id": diagnostic.rule_id,
@@ -57,6 +57,13 @@ def diagnostic_to_view(diagnostic: Diagnostic) -> dict:
         "location": location_label(diagnostic.location),
         "location_data": location_data(diagnostic.location),
     }
+    if diagnostic.reason:
+        view["reason"] = diagnostic.reason
+    if diagnostic.suggestion:
+        view["suggestion"] = diagnostic.suggestion
+    if diagnostic.original_text:
+        view["original_text"] = diagnostic.original_text
+    return view
 
 
 _AI_PREFIX_LABELS = {

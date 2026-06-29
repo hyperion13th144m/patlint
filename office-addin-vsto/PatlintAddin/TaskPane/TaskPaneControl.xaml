@@ -3,73 +3,216 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Width="340" FontFamily="Segoe UI" FontSize="13">
   <UserControl.Resources>
+
+    <!-- Primary (accent green) button -->
     <Style x:Key="PrimaryBtn" TargetType="Button">
-      <Setter Property="Background" Value="#1f6f5b"/>
-      <Setter Property="Foreground" Value="White"/>
-      <Setter Property="BorderBrush" Value="#1f6f5b"/>
-      <Setter Property="Padding" Value="10,5"/>
-      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Background"   Value="#1f6f5b"/>
+      <Setter Property="Foreground"   Value="White"/>
+      <Setter Property="BorderBrush"  Value="#1f6f5b"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding"      Value="10,5"/>
+      <Setter Property="Cursor"       Value="Hand"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="1" CornerRadius="4"
-                    Padding="{TemplateBinding Padding}">
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="4" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="IsEnabled" Value="False">
+          <Setter Property="Opacity" Value="0.55"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- Secondary (white/gray border) button -->
+    <Style x:Key="SecondaryBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+      <Setter Property="Background"  Value="White"/>
+      <Setter Property="Foreground"  Value="#111827"/>
+      <Setter Property="BorderBrush" Value="#d1d5db"/>
+    </Style>
+
+    <!-- AI (purple) button -->
+    <Style x:Key="AiBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+      <Setter Property="Background"  Value="#6d28d9"/>
+      <Setter Property="BorderBrush" Value="#6d28d9"/>
+    </Style>
+
+    <!-- Small secondary button (e.g. jump) -->
+    <Style x:Key="SmallBtn" TargetType="Button" BasedOn="{StaticResource SecondaryBtn}">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Padding"  Value="5,2"/>
+    </Style>
+
+    <!-- Severity filter toggle button -->
+    <Style x:Key="SevBtn" TargetType="Button">
+      <Setter Property="FontSize"       Value="11"/>
+      <Setter Property="FontWeight"     Value="Bold"/>
+      <Setter Property="Padding"        Value="8,2"/>
+      <Setter Property="Margin"         Value="0,0,4,0"/>
+      <Setter Property="Cursor"         Value="Hand"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="999" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
           </ControlTemplate>
         </Setter.Value>
       </Setter>
     </Style>
-    <Style x:Key="SecondaryBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
-      <Setter Property="Background" Value="White"/>
-      <Setter Property="Foreground" Value="#111827"/>
-      <Setter Property="BorderBrush" Value="#d1d5db"/>
-    </Style>
-    <Style x:Key="SmallBtn" TargetType="Button" BasedOn="{StaticResource SecondaryBtn}">
-      <Setter Property="FontSize" Value="11"/>
-      <Setter Property="Padding" Value="5,2"/>
-    </Style>
+
   </UserControl.Resources>
 
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="14,14,14,24">
+  <Grid>
+    <Grid.RowDefinitions>
+      <!-- Controls area (auto-height, scrollable) -->
+      <RowDefinition Height="Auto"/>
+      <!-- Results area (fills remaining space) -->
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
 
-      <!-- Header -->
-      <TextBlock Text="PatLint" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+    <!-- ================================================================ -->
+    <!-- Row 0: Controls                                                   -->
+    <!-- ================================================================ -->
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="320">
+      <StackPanel Margin="14,14,14,6">
 
-      <!-- API URL -->
-      <TextBlock Text="API URL" FontWeight="Bold" Margin="0,0,0,4"/>
-      <Grid Margin="0,0,0,8">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*"/>
-          <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <TextBox x:Name="ApiUrlBox" Grid.Column="0" Padding="6,5"
-                 BorderBrush="#d1d5db" BorderThickness="1"
-                 TextChanged="ApiUrlBox_TextChanged"/>
-        <Button Grid.Column="1" Content="保存" Style="{StaticResource SecondaryBtn}"
-                Margin="6,0,0,0" Click="SaveApiUrl_Click"/>
-      </Grid>
+        <!-- Header -->
+        <DockPanel Margin="0,0,0,12">
+          <TextBlock Text="PatLint" FontSize="18" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <TextBlock x:Name="HealthText" Text="API" Foreground="#6b7280" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBlock>
+              <Hyperlink x:Name="HelpLink" NavigateUri="about:blank" RequestNavigate="HelpLink_Click">ヘルプ</Hyperlink>
+            </TextBlock>
+          </StackPanel>
+        </DockPanel>
 
-      <!-- Action buttons -->
-      <WrapPanel Margin="0,0,0,8">
-        <Button x:Name="CheckApiBtn" Content="API確認" Style="{StaticResource SecondaryBtn}"
-                Margin="0,0,6,6" Click="CheckApi_Click"/>
-        <Button x:Name="CheckDocBtn" Content="文書をチェック" Style="{StaticResource PrimaryBtn}"
-                Margin="0,0,0,6" Click="CheckDocument_Click"/>
-      </WrapPanel>
+        <!-- API URL -->
+        <TextBlock Text="API URL" FontWeight="Bold" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="ApiUrlBox" Grid.Column="0" Padding="6,5"
+                   BorderBrush="#d1d5db" BorderThickness="1"
+                   TextChanged="ApiUrlBox_TextChanged"/>
+          <Button Grid.Column="1" Content="保存" Style="{StaticResource SecondaryBtn}"
+                  Margin="6,0,0,0" Click="SaveApiUrl_Click"/>
+        </Grid>
 
-      <!-- Status -->
-      <TextBlock x:Name="StatusText" Foreground="#6b7280" Margin="0,0,0,10" TextWrapping="Wrap"/>
+        <!-- Action buttons -->
+        <WrapPanel Margin="0,0,0,6">
+          <Button x:Name="CheckApiBtn" Content="API確認"
+                  Style="{StaticResource SecondaryBtn}" Margin="0,0,6,4" Click="CheckApi_Click"/>
+          <Button x:Name="CheckDocBtn" Content="文書をチェック"
+                  Style="{StaticResource PrimaryBtn}" Margin="0,0,0,4" Click="CheckDocument_Click"/>
+        </WrapPanel>
 
-      <!-- Summary pills -->
-      <WrapPanel x:Name="SummaryPanel" Margin="0,0,0,12"/>
+        <!-- Status -->
+        <TextBlock x:Name="StatusText" Foreground="#6b7280" TextWrapping="Wrap"
+                   Margin="0,0,0,6" MinHeight="16"/>
 
-      <!-- Results area -->
-      <StackPanel x:Name="ResultsPanel"/>
+        <!-- Summary pills -->
+        <WrapPanel x:Name="SummaryPanel" Margin="0,0,0,6"/>
 
-    </StackPanel>
-  </ScrollViewer>
+        <!-- ─── AI panel (hidden until document loaded) ─── -->
+        <StackPanel x:Name="AiPanel" Visibility="Collapsed">
+          <Border BorderBrush="#d1d5db" BorderThickness="0,1,0,0" Margin="0,6,0,10"/>
+          <TextBlock Text="AI文書校正" FontWeight="Bold" Foreground="#6d28d9" Margin="0,0,0,8"/>
+
+          <TextBlock Text="プロバイダー" FontWeight="Bold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="ProviderCombo" Margin="0,0,0,8" SelectionChanged="ProviderCombo_Changed">
+            <ComboBoxItem Content="Anthropic (Claude)" Tag="anthropic" IsSelected="True"/>
+            <ComboBoxItem Content="Ollama（ローカル）"  Tag="ollama"/>
+          </ComboBox>
+
+          <StackPanel x:Name="OllamaModelRow" Visibility="Collapsed" Margin="0,0,0,8">
+            <TextBlock Text="Ollama モデル名" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBox x:Name="OllamaModelBox" Text="qwen3:8b" Padding="6,5"
+                     BorderBrush="#d1d5db" BorderThickness="1"/>
+          </StackPanel>
+
+          <CheckBox x:Name="AnonymizeCheck" Content="匿名化して送信"
+                    IsChecked="True" Margin="0,0,0,8"/>
+
+          <WrapPanel Margin="0,0,0,4">
+            <Button x:Name="AiSubmitBtn" Content="文書校正を実行"
+                    Style="{StaticResource AiBtn}" Margin="0,0,6,4" Click="AiSubmit_Click"/>
+            <Button x:Name="AiCancelBtn" Content="キャンセル"
+                    Style="{StaticResource SecondaryBtn}" Margin="0,0,6,4"
+                    Visibility="Collapsed" Click="AiCancel_Click"/>
+            <Button x:Name="AiClearBtn" Content="クリア"
+                    Style="{StaticResource SecondaryBtn}" Margin="0,0,0,4"
+                    Visibility="Collapsed" Click="AiClear_Click"/>
+          </WrapPanel>
+
+          <TextBlock x:Name="AiStatusText" Foreground="#6b7280" TextWrapping="Wrap"
+                     FontSize="12" MinHeight="14" Margin="0,0,0,4"/>
+          <StackPanel x:Name="TokenLogPanel" Margin="0,0,0,4"/>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ================================================================ -->
+    <!-- Row 1: Results (empty state or tabs)                              -->
+    <!-- ================================================================ -->
+
+    <!-- Empty state placeholder -->
+    <Border x:Name="EmptyState" Grid.Row="1" Margin="14,8,14,14"
+            BorderBrush="#d1d5db" BorderThickness="1" CornerRadius="6"
+            Background="#f9fafb">
+      <TextBlock Text="診断結果がここに表示されます。" Foreground="#6b7280"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Border>
+
+    <!-- Result tabs (hidden until first check completes) -->
+    <TabControl x:Name="ResultTabs" Grid.Row="1" Margin="8,4,8,8"
+                Visibility="Collapsed">
+
+      <TabItem Header="診断結果">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="DiagPanel" Margin="8,8,8,16"/>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="請求項">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="ClaimsPanel" Margin="8,8,8,16"/>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="符号">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="ReferencePanel" Margin="8,8,8,16"/>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="語句・単位">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="TermsPanel" Margin="8,8,8,16"/>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem x:Name="AiResultTab" Header="AI校正">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="AiResultPanel" Margin="8,8,8,16"/>
+        </ScrollViewer>
+      </TabItem>
+
+    </TabControl>
+  </Grid>
 </UserControl>

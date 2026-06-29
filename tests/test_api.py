@@ -103,7 +103,9 @@ class ApiTests(unittest.TestCase):
         views = data["diagnostic_views"]
         self.assertTrue(any(view["rule_label"] == "段落末尾句点" for view in views))
         self.assertTrue(any(view["location"] == "段落【0001】" for view in views))
-        self.assertTrue(all("suggestion" not in view for view in views))
+        # AI由来のフィールドはルールベース診断には含まれない
+        self.assertTrue(all("reason" not in view for view in views))
+        self.assertTrue(all("original_text" not in view for view in views))
 
 
 if __name__ == "__main__":

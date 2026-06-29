@@ -157,6 +157,29 @@ def build_claim_review_prompt(
 {json.dumps(_ISSUES_SCHEMA, ensure_ascii=False, indent=2)}"""
 
 
+PROOFREAD_SYSTEM_PROMPT = """\
+あなたは日本語文書の校正者です。
+指定された段落を「誤字脱字」「係り受け」の観点のみで校正してください。
+
+ルール：
+- 発明の内容・構成は一切変えないでください。
+- 最小限の修正のみ行ってください。
+- 修正箇所がなければ {"has_correction": false} のみ返してください。
+- 修正箇所がある場合は {"has_correction": true, "corrected_text": "段落全文（修正済み）"} を返してください。
+- corrected_text には段落の全文を入れてください（修正箇所だけではなく）。
+- 余計なテキストは出力しないでください。"""
+
+
+def build_proofread_prompt(block_text: str) -> str:
+    return f"""\
+以下の段落を誤字脱字・係り受けの観点で校正してください。
+
+## 対象段落
+{block_text}
+
+修正がなければ {{"has_correction": false}}、修正がある場合は {{"has_correction": true, "corrected_text": "段落全文（修正済み）"}} を返してください。"""
+
+
 def build_paragraph_review_prompt(
     target_paragraph: str,
     context_paragraphs: list[str],

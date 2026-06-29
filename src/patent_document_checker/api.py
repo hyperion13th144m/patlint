@@ -232,6 +232,12 @@ class OverviewReviewRequest(BaseModel):
     anonymize: bool = True
 
 
+class ProofreadRequest(BaseModel):
+    provider: str = "anthropic"
+    model: str | None = None
+    anonymize: bool = True
+
+
 # ---------------------------------------------------------------------------
 # AI review endpoints
 # ---------------------------------------------------------------------------
@@ -396,6 +402,60 @@ async def paragraph_review_endpoint(document_id: str, request: ParagraphReviewRe
 
         total_usage["total_tokens"] = total_usage["input_tokens"] + total_usage["output_tokens"]
         yield _sse("done", {"total_token_usage": total_usage})
+
+    return StreamingResponse(generate(), media_type="text/event-stream", headers=_SSE_HEADERS)
+
+
+@app.post("/api/documents/{document_id}/proofread")
+async def proofread_endpoint(document_id: str, request: ProofreadRequest):
+    """文書校正（SSE）。【○○】ブロックごとに誤字脱字・係り受けをチェックし校正前後を返す。"""
+    from .ai.client import get_ai_client
+    from .ai.review import iter_proofread
+
+    document = _get_document(document_id)
+
+    try:
+        client = get_ai_client(provider=request.provider, model=request.model)
+    except (ImportError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    from .ai.review import _group_blocks
+    total_blocks = sum(
+        1 for _, text in _group_blocks(document) if len(text) >= 10
+    )
+
+    async def generate():
+        total_usage: dict[str, int] = {"input_tokens": 0, "output_tokens": 0}
+        correction_count = 0
+        yield _sse("start", {"total": total_blocks})
+        try:
+            async for label, has_correction, original_text, corrected_text, usage in iter_proofread(
+                document=document,
+                client=client,
+                do_anonymize=request.anonymize,
+            ):
+                total_usage["input_tokens"] += usage["input_tokens"]
+                total_usage["output_tokens"] += usage["output_tokens"]
+                if has_correction:
+                    correction_count += 1
+                event_data: dict = {
+                    "label": label,
+                    "has_correction": has_correction,
+                    "original_text": original_text,
+                    "token_usage": {**usage, "total_tokens": usage["input_tokens"] + usage["output_tokens"]},
+                }
+                if corrected_text is not None:
+                    event_data["corrected_text"] = corrected_text
+                yield _sse("result", event_data)
+        except Exception as exc:
+            yield _sse("error", {"message": str(exc)})
+            return
+
+        total_usage["total_tokens"] = total_usage["input_tokens"] + total_usage["output_tokens"]
+        yield _sse("done", {
+            "total_token_usage": total_usage,
+            "correction_count": correction_count,
+        })
 
     return StreamingResponse(generate(), media_type="text/event-stream", headers=_SSE_HEADERS)
 

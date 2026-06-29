@@ -13,10 +13,12 @@ from .anonymizer import anonymize
 from .client import AIClient, TokenUsage
 from .converter import ai_issues_to_diagnostics, parse_ai_response
 from .prompts import (
+    PROOFREAD_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     build_claim_review_prompt,
     build_overview_prompt,
     build_paragraph_review_prompt,
+    build_proofread_prompt,
 )
 
 _MAX_CONTEXT_CHARS = 600  # コンテキスト段落1件あたりの上限
@@ -403,3 +405,86 @@ async def paragraph_review(
         total_usage["input_tokens"] += usage["input_tokens"]
         total_usage["output_tokens"] += usage["output_tokens"]
     return all_diagnostics, total_usage
+
+
+def _parse_proofread_response(response_text: str) -> tuple[bool, str | None]:
+    text = response_text.strip()
+    fence = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", text)
+    if fence:
+        text = fence.group(1)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return False, None
+    if not isinstance(data, dict):
+        return False, None
+    has_correction = bool(data.get("has_correction", False))
+    corrected = data.get("corrected_text") if has_correction else None
+    return has_correction, str(corrected) if corrected else None
+
+
+def _deanonymize(text: str, mapping: dict[str, str]) -> str:
+    """anonymize() のマッピングを逆引きして元のテキストに戻す。"""
+    reverse = {v: k for k, v in mapping.items()}
+    for placeholder, original in reverse.items():
+        text = text.replace(placeholder, original)
+    return text
+
+
+_HEADER_RE = re.compile(r"^【[^】]+】")
+
+
+def _group_blocks(document: PatentDocumentIR) -> list[tuple[str, str]]:
+    """【...】ブロックを起点に、直後の非ヘッダーブロックを結合してグループ化する。
+
+    Returns: list of (label, combined_text)
+    """
+    blocks = document.raw_blocks
+    groups: list[tuple[str, str]] = []
+    i = 0
+    while i < len(blocks):
+        text = blocks[i].text
+        m = _HEADER_RE.match(text)
+        if not m:
+            i += 1
+            continue
+        label = m.group(0)
+        parts = [text]
+        j = i + 1
+        while j < len(blocks):
+            next_text = blocks[j].text
+            if _HEADER_RE.match(next_text):
+                break
+            if next_text:
+                parts.append(next_text)
+            j += 1
+        i = j
+        combined = "\n".join(parts)
+        groups.append((label, combined))
+    return groups
+
+
+async def iter_proofread(
+    document: PatentDocumentIR,
+    client: AIClient,
+    do_anonymize: bool = True,
+) -> AsyncGenerator[tuple[str, bool, str, str | None, TokenUsage], None]:
+    """グループ（【...】〜次の【...】）ごとに (label, has_correction, original_text, corrected_text, usage) を yield。"""
+    for label, combined_text in _group_blocks(document):
+        if len(combined_text) < 10:
+            continue
+
+        send_text = combined_text
+        amap: dict[str, str] | None = None
+        if do_anonymize:
+            send_text, amap_obj = anonymize(combined_text)
+            amap = amap_obj.mapping
+
+        user_prompt = build_proofread_prompt(send_text)
+        response, usage = await client.chat(PROOFREAD_SYSTEM_PROMPT, user_prompt)
+
+        has_correction, corrected = _parse_proofread_response(response)
+        if has_correction and corrected and amap:
+            corrected = _deanonymize(corrected, amap)
+
+        yield label, has_correction, combined_text, corrected, usage

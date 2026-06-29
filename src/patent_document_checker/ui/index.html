@@ -91,16 +91,48 @@
     .grouped-table td.issues-cell { vertical-align: top; }
     .issue-item { display: flex; gap: 6px; margin-bottom: 6px; align-items: flex-start; }
     .issue-item:last-child { margin-bottom: 0; }
+    .issue-item[data-hidden] { display: none; }
     .issue-dot { flex-shrink: 0; margin-top: 3px; }
     .issue-dot.error { color: var(--error); }
     .issue-dot.warning { color: var(--warning); }
     .issue-dot.info { color: var(--info); }
-    .issue-body { flex: 1; }
+    .issue-body { flex: 1; min-width: 0; }
     .issue-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
+    .issue-summary { display: flex; align-items: baseline; gap: 6px; cursor: pointer; user-select: none; }
+    .issue-summary:hover .issue-message { text-decoration: underline; text-decoration-color: var(--border); }
+    .issue-toggle { flex-shrink: 0; font-size: 11px; color: var(--muted); }
     .issue-message { font-size: 13px; }
+    .issue-detail { margin-top: 6px; padding: 8px 10px; background: var(--panel); border-radius: 6px; border: 1px solid var(--border); font-size: 12px; line-height: 1.7; display: none; }
+    .issue-detail.open { display: block; }
+    .issue-detail-row { margin-bottom: 4px; }
+    .issue-detail-row:last-child { margin-bottom: 0; }
+    .issue-detail-key { font-weight: 700; color: var(--muted); margin-right: 4px; }
+    .severity-filter { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .severity-filter span { font-size: 12px; color: var(--muted); margin-right: 2px; }
+    .sev-btn { min-height: 26px; padding: 0 10px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; }
+    .sev-btn.active-error { border-color: #fca5a5; background: #fee2e2; color: #991b1b; }
+    .sev-btn.active-warning { border-color: #fcd34d; background: #fef3c7; color: #92400e; }
+    .sev-btn.active-info { border-color: #93c5fd; background: #dbeafe; color: #1e40af; }
+    .proofread-before { white-space: pre-wrap; word-break: break-word; background: #fef2f2; border-radius: 4px; padding: 6px 8px; font-size: 13px; line-height: 1.7; }
+    .proofread-after { white-space: pre-wrap; word-break: break-word; background: #f0fdf4; border-radius: 4px; padding: 6px 8px; font-size: 13px; line-height: 1.7; }
+    .diff-del { text-decoration: underline; text-decoration-color: #dc2626; text-decoration-thickness: 2px; color: #b91c1c; }
+    .diff-ins { text-decoration: underline; text-decoration-color: #16a34a; text-decoration-thickness: 2px; color: #15803d; }
+    .result-tabs { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+    .result-tab { min-height: 34px; padding: 0 14px; border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; background: var(--panel); color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; margin-right: 4px; margin-bottom: -2px; position: relative; }
+    .result-tab.active { background: #fff; border-bottom: 2px solid #fff; color: var(--accent); }
+    .result-tab:hover:not(.active) { background: #f3f4f6; color: var(--text); }
+    .result-tab-badge { display: inline-block; background: var(--ai); color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 6px; margin-left: 5px; vertical-align: middle; }
+    .tab-panel { display: none; padding-top: 16px; }
+    .tab-panel.active { display: block; }
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--border); }
+    }
+    @media print {
+      aside { display: none; }
+      .result-tabs { display: none; }
+      .tab-panel { display: block !important; }
+      .summary { margin-bottom: 12px; }
     }
   </style>
 </head>
@@ -138,22 +170,10 @@
 
       <div class="status muted" id="status"></div>
 
-      <!-- AI review panel: shown after successful upload -->
+      <!-- AI proofreading panel: shown after successful upload -->
       <div id="ai-panel" class="ai-panel hidden">
         <hr class="divider">
-        <p class="ai-panel-title">AIレビュー</p>
-
-        <label for="ai-review-type">レビュー種別</label>
-        <select id="ai-review-type">
-          <option value="overview">全体レビュー</option>
-          <option value="claim">請求項レビュー</option>
-          <option value="paragraph">段落レビュー</option>
-        </select>
-
-        <div id="claim-numbers-row" class="hidden">
-          <label for="ai-claim-numbers">請求項番号（カンマ区切り、空欄で全請求項）</label>
-          <input type="text" id="ai-claim-numbers" placeholder="例: 1, 2, 3">
-        </div>
+        <p class="ai-panel-title">AI文書校正</p>
 
         <label for="ai-provider">プロバイダー</label>
         <select id="ai-provider">
@@ -172,7 +192,7 @@
         </div>
 
         <div class="actions">
-          <button type="button" id="ai-submit">AIレビューを実行</button>
+          <button type="button" id="ai-submit">文書校正を実行</button>
           <button type="button" id="ai-cancel" class="secondary hidden">キャンセル</button>
           <button type="button" id="ai-clear" class="secondary hidden">クリア</button>
         </div>
@@ -184,11 +204,23 @@
     <section>
       <div class="summary" id="summary"></div>
       <div id="result" class="empty">解析結果がここに表示されます。</div>
+      <nav class="result-tabs hidden" id="result-tabs" aria-label="結果タブ">
+        <button class="result-tab active" data-panel="panel-diagnostics">診断結果</button>
+        <button class="result-tab" data-panel="panel-claims">請求項の関係</button>
+        <button class="result-tab" data-panel="panel-reference">符号の説明</button>
+        <button class="result-tab" data-panel="panel-terms">語句・単位</button>
+        <button class="result-tab" id="ai-tab" data-panel="panel-ai">AI文書校正</button>
+      </nav>
+      <div id="panel-diagnostics" class="tab-panel active"></div>
+      <div id="panel-claims" class="tab-panel"></div>
+      <div id="panel-reference" class="tab-panel"></div>
+      <div id="panel-terms" class="tab-panel"></div>
+      <div id="panel-ai" class="tab-panel"></div>
     </section>
   </main>
 
   <script>
-    const state = { result: null, documentId: null, aiDone: { overview: false, claim: false, paragraph: false } };
+    const state = { result: null, documentId: null, proofreadResults: [], proofreadDone: false };
     const $ = selector => document.querySelector(selector);
     const status = $('#status');
     const summary = $('#summary');
@@ -251,35 +283,49 @@
     // Render
     // -----------------------------------------------------------------------
 
+    const switchResultTab = panelId => {
+      document.querySelectorAll('.result-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.panel === panelId);
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === panelId);
+      });
+    };
+
+    document.querySelectorAll('.result-tab').forEach(btn => {
+      btn.addEventListener('click', () => switchResultTab(btn.dataset.panel));
+    });
+
     const render = data => {
       state.result = data;
       const counts = data.summary || { error: 0, warning: 0, info: 0 };
-      const aiCount = (data.diagnostic_views || []).filter(d => d.rule_id.startsWith('AI_')).length;
       summary.innerHTML = `
         <span class="pill error">Error ${counts.error ?? 0}</span>
         <span class="pill warning">Warning ${counts.warning ?? 0}</span>
         <span class="pill info">Info ${counts.info ?? 0}</span>
-        ${aiCount > 0 ? `<span class="pill ai">AI ${aiCount}</span>` : ''}
         <span class="pill">Source ${escapeHtml(data.source || '')}</span>
       `;
-      result.className = '';
+      // 空表示を消してタブを表示
+      result.classList.add('hidden');
+      $('#result-tabs').classList.remove('hidden');
+
       const allViews = data.diagnostic_views || [];
       const blocks = data.blocks || [];
-      const ruleViews    = allViews.filter(d => !d.rule_id.startsWith('AI_'));
-      const overviewViews = allViews.filter(d => d.rule_id.startsWith('AI_OVERVIEW'));
-      const claimViews   = allViews.filter(d => d.rule_id.startsWith('AI_CLAIM'));
-      const paraViews    = allViews.filter(d => d.rule_id.startsWith('AI_PARA'));
-      result.innerHTML = [
-        renderGroupedDiagnostics('診断結果（ルールベース）', ruleViews, blocks),
-        renderGroupedDiagnostics('診断結果（全体AIレビュー）', overviewViews, blocks),
-        renderGroupedDiagnostics('診断結果（請求項AIレビュー）', claimViews, blocks),
-        renderGroupedDiagnostics('診断結果（明細書AIレビュー）', paraViews, blocks),
-        renderClaimRelationships(data.claims || []),
-        renderReferenceSigns(data.reference_sign_entries || []),
+      const ruleViews = allViews.filter(d => !d.rule_id.startsWith('AI_'));
+
+      $('#panel-diagnostics').innerHTML = renderGroupedDiagnostics('診断結果（ルールベース）', ruleViews, blocks)
+        || '<div class="empty">指摘事項はありません。</div>';
+      $('#panel-claims').innerHTML = renderClaimRelationships(data.claims || [])
+        || '<div class="empty">請求項データがありません。</div>';
+      $('#panel-reference').innerHTML = renderReferenceSigns(data.reference_sign_entries || []);
+      $('#panel-terms').innerHTML = [
         renderTermOccurrences(data.term_occurrences || {}),
         renderUnitChecks(data.unit_checks || [])
       ].join('');
+
       attachReferenceControls(data.reference_sign_entries || []);
+      switchResultTab('panel-diagnostics');
+      // AI校正セクションは render() に依存しない（逐次追記方式）
     };
 
     const section = (title, body) => `
@@ -366,15 +412,27 @@
           (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9)
         );
 
-        const issuesHtml = sortedItems.map(d => `
-          <div class="issue-item">
-            <span class="issue-dot ${escapeHtml(d.severity)}">${SEVERITY_DOT[d.severity] || '・'}</span>
-            <div class="issue-body">
-              <div class="issue-label">${isAiRule(d.rule_id) ? '<span class="ai-badge">AI</span>' : ''}${escapeHtml(d.rule_label)}</div>
-              <div class="issue-message">${escapeHtml(d.message)}</div>
-            </div>
-          </div>
-        `).join('');
+        const issuesHtml = sortedItems.map(d => {
+          const hasDetail = d.reason || d.suggestion || d.original_text;
+          const detailHtml = hasDetail ? `
+            <div class="issue-detail">
+              ${d.original_text ? `<div class="issue-detail-row"><span class="issue-detail-key">原文</span>${escapeHtml(d.original_text)}</div>` : ''}
+              ${d.reason ? `<div class="issue-detail-row"><span class="issue-detail-key">根拠</span>${escapeHtml(d.reason)}</div>` : ''}
+              ${d.suggestion ? `<div class="issue-detail-row"><span class="issue-detail-key">修正案</span>${escapeHtml(d.suggestion)}</div>` : ''}
+            </div>` : '';
+          return `
+            <div class="issue-item" data-severity="${escapeHtml(d.severity)}">
+              <span class="issue-dot ${escapeHtml(d.severity)}">${SEVERITY_DOT[d.severity] || '・'}</span>
+              <div class="issue-body">
+                <div class="issue-label">${isAiRule(d.rule_id) ? '<span class="ai-badge">AI</span>' : ''}${escapeHtml(d.rule_label)}</div>
+                <div class="issue-summary"${hasDetail ? ' onclick="toggleIssueDetail(this)"' : ''}>
+                  <span class="issue-message">${escapeHtml(d.message)}</span>
+                  ${hasDetail ? '<span class="issue-toggle">▶ 詳細</span>' : ''}
+                </div>
+                ${detailHtml}
+              </div>
+            </div>`;
+        }).join('');
 
         return `
           <tr>
@@ -384,8 +442,23 @@
         `;
       }).join('');
 
+      // 重要度ごとの件数を集計
+      const sevCount = { error: 0, warning: 0, info: 0 };
+      for (const [, { items }] of rows) {
+        for (const d of items) sevCount[d.severity] = (sevCount[d.severity] || 0) + 1;
+      }
+      const tableId = `gt-${Math.random().toString(36).slice(2)}`;
+      const filterBar = `
+        <div class="severity-filter" data-table="${tableId}">
+          <span>表示：</span>
+          ${sevCount.error > 0 ? `<button class="sev-btn active-error" data-sev="error" onclick="toggleSevFilter(this)">● Error ${sevCount.error}</button>` : ''}
+          ${sevCount.warning > 0 ? `<button class="sev-btn active-warning" data-sev="warning" onclick="toggleSevFilter(this)">▲ Warning ${sevCount.warning}</button>` : ''}
+          ${sevCount.info > 0 ? `<button class="sev-btn active-info" data-sev="info" onclick="toggleSevFilter(this)">◆ Info ${sevCount.info}</button>` : ''}
+        </div>`;
+
       return section(title, `
-        <table class="grouped-table">
+        ${filterBar}
+        <table class="grouped-table" id="${tableId}">
           <thead>
             <tr><th>指摘箇所</th><th>指摘事項</th></tr>
           </thead>
@@ -395,6 +468,35 @@
     };
 
     const isAiRule = ruleId => String(ruleId).startsWith('AI_');
+
+
+    // アコーディオン開閉
+    function toggleIssueDetail(summaryEl) {
+      const detail = summaryEl.parentElement.querySelector('.issue-detail');
+      const toggle = summaryEl.querySelector('.issue-toggle');
+      if (!detail) return;
+      const open = detail.classList.toggle('open');
+      if (toggle) toggle.textContent = open ? '▼ 詳細' : '▶ 詳細';
+    }
+
+    // 重要度フィルター
+    function toggleSevFilter(btn) {
+      const sev = btn.dataset.sev;
+      const activeClass = `active-${sev}`;
+      const isActive = btn.classList.toggle(activeClass);
+      const tableId = btn.closest('.severity-filter').dataset.table;
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      table.querySelectorAll(`.issue-item[data-severity="${sev}"]`).forEach(item => {
+        item.toggleAttribute('data-hidden', !isActive);
+      });
+      // 行内の指摘が全て非表示なら行ごと隠す
+      table.querySelectorAll('tbody tr').forEach(row => {
+        const items = row.querySelectorAll('.issue-item');
+        const allHidden = [...items].every(i => i.hasAttribute('data-hidden'));
+        row.style.display = allHidden ? 'none' : '';
+      });
+    }
 
     const renderDiagnostics = diagnostics => {
       if (!diagnostics.length) return section('診断結果', '<div class="empty">No diagnostics.</div>');
@@ -606,7 +708,22 @@
       aiPanel.classList.add('hidden');
       tokenLog.innerHTML = '';
       state.documentId = null;
-      state.aiDone = { overview: false, claim: false, paragraph: false };
+      state.proofreadResults = [];
+      state.proofreadDone = false;
+      // 結果エリアをリセット
+      result.className = 'empty';
+      result.classList.remove('hidden');
+      result.textContent = '解析中...';
+      $('#result-tabs').classList.add('hidden');
+      ['panel-diagnostics','panel-claims','panel-reference','panel-terms','panel-ai'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = ''; el.classList.remove('active'); }
+      });
+      document.getElementById('panel-diagnostics')?.classList.add('active');
+      const badge = $('#ai-tab')?.querySelector('.result-tab-badge');
+      if (badge) badge.remove();
+      const aiPill = summary.querySelector('.pill.ai');
+      if (aiPill) aiPill.remove();
       try {
         const response = await fetch(url, options);
         const text = await response.text();
@@ -648,53 +765,180 @@
     });
 
     // -----------------------------------------------------------------------
-    // AI review panel controls
+    // Character-level diff (LCS)
+    // -----------------------------------------------------------------------
+
+    const diffChars = (a, b) => {
+      const m = a.length, n = b.length;
+      // サイズが大きすぎる場合は差分なしで返す
+      if (m * n > 400000) return [{ text: a, type: 'del' }, { text: b, type: 'ins' }];
+
+      // LCS DP
+      const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+      for (let i = m - 1; i >= 0; i--)
+        for (let j = n - 1; j >= 0; j--)
+          dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+
+      // トレースバック
+      const ops = [];
+      let i = 0, j = 0;
+      while (i < m || j < n) {
+        if (i < m && j < n && a[i] === b[j]) {
+          ops.push({ ch: a[i], type: 'eq' }); i++; j++;
+        } else if (j < n && (i >= m || dp[i][j + 1] >= dp[i + 1][j])) {
+          ops.push({ ch: b[j], type: 'ins' }); j++;
+        } else {
+          ops.push({ ch: a[i], type: 'del' }); i++;
+        }
+      }
+
+      // 連続する同じ type をまとめる
+      const runs = [];
+      for (const op of ops) {
+        if (runs.length && runs[runs.length - 1].type === op.type)
+          runs[runs.length - 1].text += op.ch;
+        else
+          runs.push({ text: op.ch, type: op.type });
+      }
+      return runs;
+    };
+
+    const renderDiffHtml = (original, corrected) => {
+      const runs = diffChars(original, corrected);
+      let beforeHtml = '', afterHtml = '';
+      for (const run of runs) {
+        const escaped = escapeHtml(run.text);
+        if (run.type === 'eq') {
+          beforeHtml += escaped;
+          afterHtml += escaped;
+        } else if (run.type === 'del') {
+          beforeHtml += `<span class="diff-del">${escaped}</span>`;
+        } else {
+          afterHtml += `<span class="diff-ins">${escaped}</span>`;
+        }
+      }
+      return { beforeHtml, afterHtml };
+    };
+
+    // -----------------------------------------------------------------------
+    // Incremental proofreading DOM helpers
+    // -----------------------------------------------------------------------
+
+    const PROOFREAD_SECTION_ID = 'proofread-section';
+    const PROOFREAD_TBODY_ID = 'proofread-tbody';
+    const PROOFREAD_TITLE_ID = 'proofread-title';
+
+    const ensureProofreadSection = () => {
+      if (document.getElementById(PROOFREAD_SECTION_ID)) return;
+
+      const aiPanel = $('#panel-ai');
+      const sectionEl = document.createElement('div');
+      sectionEl.id = PROOFREAD_SECTION_ID;
+      sectionEl.className = 'result-section';
+      sectionEl.innerHTML = `
+        <h2 id="${PROOFREAD_TITLE_ID}">AI文書校正結果（0件）</h2>
+        <table style="table-layout:fixed;">
+          <thead>
+            <tr>
+              <th style="width:70px;">箇所</th>
+              <th>校正前</th>
+              <th>校正後</th>
+            </tr>
+          </thead>
+          <tbody id="${PROOFREAD_TBODY_ID}"></tbody>
+        </table>
+      `;
+      aiPanel.innerHTML = '';
+      aiPanel.appendChild(sectionEl);
+      // AI校正タブに切り替え
+      switchResultTab('panel-ai');
+    };
+
+    const appendProofreadRow = item => {
+      const tbody = document.getElementById(PROOFREAD_TBODY_ID);
+      if (!tbody) return;
+      let beforeHtml = '', afterHtml = '';
+      if (item.has_correction && item.corrected_text) {
+        ({ beforeHtml, afterHtml } = renderDiffHtml(item.original_text, item.corrected_text));
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="width:70px;font-weight:600;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;vertical-align:top;">${escapeHtml(item.label)}</td>
+        <td style="vertical-align:top;"><div class="proofread-before">${beforeHtml}</div></td>
+        <td style="vertical-align:top;"><div class="proofread-after">${afterHtml}</div></td>
+      `;
+      tbody.appendChild(tr);
+    };
+
+    const updateProofreadSummary = () => {
+      const titleEl = document.getElementById(PROOFREAD_TITLE_ID);
+      if (!titleEl) return;
+      const count = state.proofreadResults.filter(r => r._displayed).length;
+      titleEl.textContent = `AI文書校正結果（${count}件）`;
+      // サマリーピルも更新
+      const pill = summary.querySelector('.pill.ai');
+      if (pill) {
+        pill.textContent = `AI校正 ${count}件`;
+      } else if (count > 0) {
+        const newPill = document.createElement('span');
+        newPill.className = 'pill ai';
+        newPill.textContent = `AI校正 ${count}件`;
+        summary.appendChild(newPill);
+      }
+      // タブのバッジを更新
+      const aiTabBtn = $('#ai-tab');
+      if (aiTabBtn) {
+        let badge = aiTabBtn.querySelector('.result-tab-badge');
+        if (count > 0) {
+          if (!badge) { badge = document.createElement('span'); badge.className = 'result-tab-badge'; aiTabBtn.appendChild(badge); }
+          badge.textContent = count;
+        } else if (badge) {
+          badge.remove();
+        }
+      }
+    };
+
+    // -----------------------------------------------------------------------
+    // AI panel controls
     // -----------------------------------------------------------------------
 
     const updateAiPanelVisibility = () => {
-      const type = $('#ai-review-type').value;
-      $('#claim-numbers-row').classList.toggle('hidden', type !== 'claim');
       const provider = $('#ai-provider').value;
       $('#ollama-model-row').classList.toggle('hidden', provider !== 'ollama');
       updateAiSubmitState();
     };
 
     const updateAiSubmitState = () => {
-      const type = $('#ai-review-type').value;
-      const done = state.aiDone[type];
-      $('#ai-submit').disabled = !!done;
-      $('#ai-clear').classList.toggle('hidden', !done);
-      if (done) {
-        aiStatus.textContent = 'レビュー済みです。クリアして再実行できます。';
+      $('#ai-submit').disabled = state.proofreadDone;
+      $('#ai-clear').classList.toggle('hidden', !state.proofreadDone);
+      if (state.proofreadDone) {
+        aiStatus.textContent = '校正済みです。クリアして再実行できます。';
       } else if (!aiStatus.textContent.includes('実行中') && !aiStatus.textContent.includes('エラー')) {
         aiStatus.textContent = '';
       }
     };
 
-    const aiPrefixMap = { overview: 'AI_OVERVIEW', claim: 'AI_CLAIM', paragraph: 'AI_PARA' };
-
     $('#ai-clear').addEventListener('click', () => {
-      const type = $('#ai-review-type').value;
-      state.aiDone[type] = false;
-      const clearPrefix = aiPrefixMap[type];
-      if (state.result) {
-        state.result.diagnostic_views = (state.result.diagnostic_views || [])
-          .filter(d => !d.rule_id.startsWith(clearPrefix));
-        render(state.result);
-      }
+      state.proofreadResults = [];
+      state.proofreadDone = false;
+      const sec = document.getElementById(PROOFREAD_SECTION_ID);
+      if (sec) sec.remove();
+      $('#panel-ai').innerHTML = '';
+      const pill = summary.querySelector('.pill.ai');
+      if (pill) pill.remove();
+      const badge = $('#ai-tab')?.querySelector('.result-tab-badge');
+      if (badge) badge.remove();
       aiStatus.textContent = '';
+      tokenLog.innerHTML = '';
       updateAiSubmitState();
     });
 
-    $('#ai-review-type').addEventListener('change', updateAiPanelVisibility);
     $('#ai-provider').addEventListener('change', updateAiPanelVisibility);
 
     // -----------------------------------------------------------------------
-    // AI review execution
+    // SSE utility
     // -----------------------------------------------------------------------
 
-    // SSE ストリームを読み込むユーティリティ
-    // コールバック: onEvent(eventName, data)
     const consumeSse = async (response, onEvent, signal) => {
       const reader = response.body.getReader();
       if (signal) signal.addEventListener('abort', () => reader.cancel());
@@ -705,7 +949,7 @@
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const chunks = buffer.split('\n\n');
-        buffer = chunks.pop(); // 最後の未完了チャンクを保持
+        buffer = chunks.pop();
         for (const chunk of chunks) {
           if (!chunk.trim()) continue;
           let eventName = 'message';
@@ -716,50 +960,32 @@
           }
           if (dataStr) {
             try { onEvent(eventName, JSON.parse(dataStr)); }
-            catch { /* JSON parse error は無視 */ }
+            catch { /* ignore */ }
           }
         }
       }
     };
 
+    // -----------------------------------------------------------------------
+    // AI proofreading execution
+    // -----------------------------------------------------------------------
+
     $('#ai-submit').addEventListener('click', async () => {
       if (!state.documentId) { showAiError('先にドキュメントをアップロードしてください。'); return; }
 
-      const type = $('#ai-review-type').value;
       const provider = $('#ai-provider').value;
       const anonymize = $('#ai-anonymize').checked;
       const model = provider === 'ollama' ? ($('#ai-ollama-model').value.trim() || null) : null;
-
-      let endpoint, body;
-      if (type === 'overview') {
-        endpoint = `/api/documents/${state.documentId}/full-overview`;
-        body = { provider, model, anonymize };
-      } else if (type === 'claim') {
-        endpoint = `/api/documents/${state.documentId}/api-review`;
-        const raw = $('#ai-claim-numbers').value.trim();
-        const claimNumbers = raw
-          ? raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
-          : null;
-        body = { provider, model, anonymize, claim_numbers: claimNumbers };
-      } else {
-        endpoint = `/api/documents/${state.documentId}/paragraph-review`;
-        body = { provider, model, anonymize };
-      }
+      const endpoint = `/api/documents/${state.documentId}/proofread`;
+      const body = { provider, model, anonymize };
 
       _aiAbortController = new AbortController();
       const signal = _aiAbortController.signal;
 
       setAiBusy(true);
-      aiStatus.textContent = 'AIレビュー実行中...';
-
-      // レビュー開始時に今回実行するタイプの AI 診断だけをクリア（他タイプは保持）
-      const clearPrefix = aiPrefixMap[type];
-      const ruleOnlyViews = state.result
-        ? (state.result.diagnostic_views || []).filter(d => !d.rule_id.startsWith(clearPrefix))
-        : [];
-      const accumulatedAiViews = [];
-
-      const typeLabel = { overview: '全体', claim: '請求項', paragraph: '段落' }[type] || type;
+      aiStatus.textContent = 'AI文書校正実行中...';
+      state.proofreadResults = [];
+      tokenLog.innerHTML = '';
 
       try {
         const response = await fetch(endpoint, {
@@ -775,38 +1001,50 @@
           throw new Error(detail);
         }
 
-        let startData = null;
+        let totalBlocks = 0;
+        let processed = 0;
+
+        // 校正結果テーブルを事前に挿入しておき、行を追記していく
+        ensureProofreadSection();
+
         await consumeSse(response, (eventName, data) => {
           if (eventName === 'start') {
-            startData = data;
+            totalBlocks = data.total || 0;
           } else if (eventName === 'result') {
-            const newViews = (data.diagnostic_views || []).filter(d => d.rule_id.startsWith('AI_'));
-            accumulatedAiViews.push(...newViews);
+            processed++;
+            const item = {
+              label: data.label,
+              has_correction: data.has_correction,
+              original_text: data.original_text,
+              corrected_text: data.corrected_text || null,
+            };
+            state.proofreadResults.push(item);
 
-            // 結果を逐次反映
-            if (state.result) {
-              state.result.diagnostic_views = [...ruleOnlyViews, ...accumulatedAiViews];
-              render(state.result);
+            const isRealCorrection = item.has_correction && item.corrected_text && item.corrected_text !== item.original_text;
+            if (isRealCorrection) {
+              item._displayed = true;
+              appendProofreadRow(item);
             }
+            updateProofreadSummary();
 
-            const label = data.label || '';
+            const prog = totalBlocks > 0 ? ` (${processed}/${totalBlocks})` : '';
+            const correctedSoFar = state.proofreadResults.filter(r => r._displayed).length;
+            aiStatus.textContent = `校正中${prog}… 修正あり ${correctedSoFar} 件`;
+
             const u = data.token_usage;
-            const count = newViews.length;
-            aiStatus.textContent = `${label} 完了（${count} 件）`;
-
             if (u) {
               const now = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
               const entry = document.createElement('div');
               entry.className = 'token-entry';
-              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} ${escapeHtml(typeLabel)}レビュー ${escapeHtml(label)}</div>`
+              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} ${escapeHtml(data.label)}</div>`
                 + `入力 ${u.input_tokens.toLocaleString()} / 出力 ${u.output_tokens.toLocaleString()} / 合計 ${u.total_tokens.toLocaleString()} トークン`;
               tokenLog.appendChild(entry);
             }
           } else if (eventName === 'done') {
-            const totalCount = accumulatedAiViews.length;
-            state.aiDone[type] = true;
+            const correctionCount = state.proofreadResults.filter(r => r._displayed).length;
+            state.proofreadDone = true;
             updateAiSubmitState();
-            aiStatus.textContent = `AIレビュー完了（AI指摘 ${totalCount} 件）`;
+            aiStatus.textContent = `AI文書校正完了（修正あり ${correctionCount} 件）`;
 
             const u = data.total_token_usage;
             if (u) {
@@ -814,12 +1052,12 @@
               const entry = document.createElement('div');
               entry.className = 'token-entry';
               entry.style.fontWeight = '600';
-              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} ${escapeHtml(typeLabel)}レビュー 合計</div>`
+              entry.innerHTML = `<div class="token-label">${escapeHtml(now)} 合計</div>`
                 + `入力 ${u.input_tokens.toLocaleString()} / 出力 ${u.output_tokens.toLocaleString()} / 合計 ${u.total_tokens.toLocaleString()} トークン`;
               tokenLog.appendChild(entry);
             }
           } else if (eventName === 'error') {
-            showAiError(data.message || 'AIレビューエラー');
+            showAiError(data.message || 'AI校正エラー');
           }
         }, signal);
       } catch (error) {
