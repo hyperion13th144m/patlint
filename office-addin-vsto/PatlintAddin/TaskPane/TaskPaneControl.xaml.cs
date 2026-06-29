@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
+using Docs = System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using PatlintAddin.Models;
@@ -997,11 +997,11 @@ namespace PatlintAddin.TaskPane
             {
                 if (type == "eq")
                 {
-                    tb.Inlines.Add(new Run(text));
+                    tb.Inlines.Add(new Docs.Run(text));
                 }
                 else if (type == "del" && isBefore)
                 {
-                    tb.Inlines.Add(new Run(text)
+                    tb.Inlines.Add(new Docs.Run(text)
                     {
                         Foreground     = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#b91c1c")),
                         TextDecorations = TextDecorations.Underline,
@@ -1009,7 +1009,7 @@ namespace PatlintAddin.TaskPane
                 }
                 else if (type == "ins" && !isBefore)
                 {
-                    tb.Inlines.Add(new Run(text)
+                    tb.Inlines.Add(new Docs.Run(text)
                     {
                         Foreground     = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#15803d")),
                         TextDecorations = TextDecorations.Underline,
