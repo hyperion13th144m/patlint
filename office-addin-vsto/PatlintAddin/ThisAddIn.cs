@@ -14,10 +14,22 @@ namespace PatlintAddin
 {
     public partial class ThisAddIn
     {
-        private Microsoft.Office.Tools.CustomTaskPane _taskPane;
+        private readonly Dictionary<Word.Window, Microsoft.Office.Tools.CustomTaskPane> _taskPanes
+            = new Dictionary<Word.Window, Microsoft.Office.Tools.CustomTaskPane>();
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
+        }
+
+        private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
+        {
+        }
+
+        private Microsoft.Office.Tools.CustomTaskPane GetOrCreateTaskPane(Word.Window window)
+        {
+            if (_taskPanes.TryGetValue(window, out var existing))
+                return existing;
+
             var wpfControl = new TaskPaneControl(this.Application);
             var host = new ElementHost
             {
@@ -27,20 +39,16 @@ namespace PatlintAddin
             var container = new System.Windows.Forms.UserControl();
             container.Controls.Add(host);
 
-            _taskPane = this.CustomTaskPanes.Add(container, "PatLint");
-            _taskPane.Width = 360;
-            _taskPane.Visible = true;
+            var pane = this.CustomTaskPanes.Add(container, "PatLint", window);
+            pane.Width = 360;
+            _taskPanes[window] = pane;
+            return pane;
         }
 
-        private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
+        public void ToggleTaskPane(Word.Window window)
         {
-        }
-
-
-        public void ToggleTaskPane()
-        {
-            if (_taskPane != null)
-                _taskPane.Visible = !_taskPane.Visible;
+            var pane = GetOrCreateTaskPane(window);
+            pane.Visible = !pane.Visible;
         }
 
         protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()

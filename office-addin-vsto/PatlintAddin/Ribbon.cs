@@ -50,7 +50,9 @@ namespace PatlintAddin
         //ここでコールバック メソッドを作成します。コールバック メソッドの追加について詳しくは https://go.microsoft.com/fwlink/?LinkID=271226 をご覧ください
         public void ShowPane_Click(Office.IRibbonControl control)
         {
-            Globals.ThisAddIn.ToggleTaskPane();
+            var window = control.Context as Microsoft.Office.Interop.Word.Window;
+            if (window != null)
+                Globals.ThisAddIn.ToggleTaskPane(window);
         }
 
         public void Ribbon_Load(Office.IRibbonUI ribbonUI)
